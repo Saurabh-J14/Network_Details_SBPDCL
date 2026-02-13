@@ -1,0 +1,256 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <ImageView
+        android:id="@+id/otp_bg_Image"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scaleType="fitXY"
+        android:src="@drawable/otp_verify_bg"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/otpCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="200dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="18dp"
+        android:clipToPadding="false"
+        app:strokeColor="@android:color/white"
+        app:strokeWidth="0.6dp"
+        android:backgroundTint="#F2C7D3F5"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <ImageView
+                android:id="@+id/imglogo"
+                android:layout_width="140dp"
+                android:layout_height="60dp"
+                android:src="@drawable/nbpdcl_sbpdcl_logo"
+                android:scaleType="fitCenter"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+
+            <TextView
+                android:id="@+id/titleTxt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center"
+                android:text="@string/otp_verification"
+                android:textColor="@color/white"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/subTxt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:gravity="center"
+                android:text="@string/enter_the_code_sent_to_you_device"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:textSize="12sp" />
+
+            <LinearLayout
+                android:id="@+id/otpContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="15dp"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <com.techLabs.nbpdcl.Utils.OtpViewHandler
+                    android:id="@+id/et1"
+                    style="@style/OtpEdit"
+                    android:autofillHints="smsOTPCode"
+                    android:importantForAutofill="yes"
+                    android:maxLength="1" />
+
+                <com.techLabs.nbpdcl.Utils.OtpViewHandler
+                    android:id="@+id/et2"
+                    style="@style/OtpEdit"
+                    android:layout_marginStart="5dp"
+                    android:autofillHints="smsOTPCode"
+                    android:importantForAutofill="yes"
+                    android:maxLength="1" />
+
+                <com.techLabs.nbpdcl.Utils.OtpViewHandler
+                    android:id="@+id/et3"
+                    style="@style/OtpEdit"
+                    android:layout_marginStart="5dp"
+                    android:autofillHints="smsOTPCode"
+                    android:importantForAutofill="yes"
+                    android:maxLength="1" />
+
+                <com.techLabs.nbpdcl.Utils.OtpViewHandler
+                    android:id="@+id/et4"
+                    style="@style/OtpEdit"
+                    android:layout_marginStart="5dp"
+                    android:autofillHints="smsOTPCode"
+                    android:importantForAutofill="yes"
+                    android:maxLength="1" />
+
+                <com.techLabs.nbpdcl.Utils.OtpViewHandler
+                    android:id="@+id/et5"
+                    style="@style/OtpEdit"
+                    android:layout_marginStart="5dp"
+                    android:autofillHints="smsOTPCode"
+                    android:importantForAutofill="yes"
+                    android:maxLength="1" />
+
+                <com.techLabs.nbpdcl.Utils.OtpViewHandler
+                    android:id="@+id/et6"
+                    style="@style/OtpEdit"
+                    android:layout_marginStart="5dp"
+                    android:autofillHints="smsOTPCode"
+                    android:importantForAutofill="yes"
+                    android:maxLength="1" />
+
+            </LinearLayout>
+
+            <!--<com.google.android.material.button.MaterialButton
+                android:id="@+id/btnVerify"
+                style="@style/VerifyButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginTop="15dp"
+                android:text="@string/verify"
+                android:textSize="15sp"
+                android:textStyle="bold" />-->
+            <TextView
+                android:id="@+id/btnVerify"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="26dp"
+                android:text="Verify"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:paddingHorizontal="30dp"
+                android:paddingVertical="12dp"
+                android:background="@drawable/btn_login_gradient"
+                app:layout_constraintTop_toBottomOf="@id/passwordEdtTxt"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+
+            <LinearLayout
+                android:id="@+id/text3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/text1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:text="@string/don_t_receive_code"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/bottomRow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvResend"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/resend"
+                    android:textSize="12sp"
+                    android:textColor="@color/blue"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvTimer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text=""
+                    android:textSize="12sp"
+                    android:textColor="@color/blue"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tl_labs_net"
+            android:textColor="@color/red"
+            android:textStyle="bold"
+            android:textSize="20sp"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="1dp">
+
+            <View
+                android:id="@+id/v1"
+                android:layout_width="85dp"
+                android:layout_height="1.5dp"
+                android:background="@color/red"/>
+
+            <View
+                android:id="@+id/v2"
+                android:layout_width="50dp"
+                android:layout_height="1.5dp"
+                android:background="@color/white"/>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/a_network_analysis_android_app_using_cyme"
+            android:textColor="#EFFFFFFF"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

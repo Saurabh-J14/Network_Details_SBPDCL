@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/menu_features"
+        android:icon="@drawable/features"
+        android:iconTint="@color/white"
+        android:title="Features"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/menu_survey"
+        android:icon="@drawable/new_connection"
+        android:iconTint="@color/white"
+        android:title="Survey"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/menu_profile"
+        android:actionLayout="@layout/profile_icon_layout"
+        android:title="Profile"
+        app:showAsAction="always" />
+</menu>

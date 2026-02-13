@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/analysis_loadflow"
+        android:title="@string/loadflow" />
+
+    <item
+        android:id="@+id/analysis_shortcircuit"
+        android:title="@string/shortcircuit" />
+
+    <item
+        android:visible="false"
+        android:id="@+id/analysis_loadAllocation"
+        android:title="@string/load_allocations" />
+
+</menu>

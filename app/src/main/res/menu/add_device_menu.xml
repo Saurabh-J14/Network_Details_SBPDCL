@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/transformer_menu"
+        android:title="@string/transformer"
+        app:showAsAction="collapseActionView"/>
+
+    <item
+        android:id="@+id/switching_protective_device_menu"
+        android:title="@string/switching_and_protective_devces"
+        app:showAsAction="never">
+
+        <menu>
+            <item
+                android:id="@+id/fuse_menu"
+                android:title="@string/fuse" />
+
+            <item
+                android:id="@+id/breaker_menu"
+                android:title="@string/breaker" />
+
+            <item
+                android:id="@+id/switched_menu"
+                android:title="@string/switched" />
+
+        </menu>
+
+    </item>
+
+    <item
+        android:id="@+id/spotLoad_menu"
+        android:title="@string/spotload"
+        app:showAsAction="never">
+
+        <menu>
+            <item
+                android:id="@+id/byPhase"
+                android:title="@string/by_phase" />
+
+            <item
+                android:id="@+id/threePhase"
+                android:title="@string/three_phase" />
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/shunt_capacitor_menu"
+        android:title="@string/shunt_capacitor"
+        app:showAsAction="collapseActionView"/>
+
+</menu>

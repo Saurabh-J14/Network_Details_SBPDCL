@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/nav_nsc"
+        android:title="@string/new_connection"/>
+
+    <item
+        android:id="@+id/nav_exist_network"
+        android:title="@string/exist_network"/>
+
+    <item
+        android:id="@+id/nav_new_source"
+        android:title="@string/new_feeder"/>
+
+    <item
+        android:id="@+id/nav_profile"
+        android:title="@string/profile"/>
+
+    <item
+        android:id="@+id/nav_survey"
+        android:title="@string/surway"/>
+
+    <item
+        android:id="@+id/nav_logout"
+        android:title="@string/logout"/>
+
+</menu>

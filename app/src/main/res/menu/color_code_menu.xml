@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/color1"
+        android:icon="@drawable/rectangle"
+        android:title="@string/cable" />
+
+    <item
+        android:id="@+id/color2"
+        android:icon="@drawable/rectangle"
+        android:title="@string/overhaad"
+        android:iconTint="@color/blue"/>
+
+    <item
+        android:id="@+id/color3"
+        android:icon="@drawable/rectangle"
+        android:title="@string/unbalance" />
+
+    <item
+        android:id="@+id/color4"
+        android:icon="@drawable/rectangle"
+        android:title="@string/unbalance" />
+
+</menu>

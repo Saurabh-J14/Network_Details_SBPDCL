@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "922850094544",
+    "project_id": "t-labs-nbpdcl",
+    "storage_bucket": "t-labs-nbpdcl.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:922850094544:android:b78ba0b4d9dcb2c4a11dd5",
+        "android_client_info": {
+          "package_name": "com.techLabs.nbpdcl"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZdmjsKTBxyAK61iijv1f3EYi0n9uz0bY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
