@@ -26,6 +26,9 @@ public class LoginModel {
     @SerializedName("MobileNumber")
     @Expose
     private String mobileNumber;
+    @SerializedName("access")
+    @Expose
+    private String access;
 
     public String getMsg() {
         return msg;
@@ -81,6 +84,14 @@ public class LoginModel {
 
     public void setMobileNumber(String mobileNumber) {
         this.mobileNumber = mobileNumber;
+    }
+
+    public String getAccess() {
+        return access;
+    }
+
+    public void setAccess(String access) {
+        this.access = access;
     }
 
 }

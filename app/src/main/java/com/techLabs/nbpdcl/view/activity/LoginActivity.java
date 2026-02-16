@@ -134,12 +134,23 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onResponse(@NonNull Call<LoginModel> call, @NonNull Response<LoginModel> response) {
                 if (response.code() == 200) {
+                    getProjectList();
                     try {
                         LoginModel loginModel = response.body();
                         assert loginModel != null;
-                        if (loginModel.getMsg() != null && !loginModel.getMsg().equals("null") && loginModel.getMsg().equalsIgnoreCase("OTP sent successfully.")) {
+                        if (loginModel.getAccess() != null && !loginModel.getAccess().equals("null") && !loginModel.getAccess().isBlank()) {
+                            prefManager.setAccessToken(loginModel.getAccess());
+                        }
+                        if (loginModel.getUsertype() != null && !loginModel.getUsertype().equals("null") && !loginModel.getUsertype().isBlank()) {
+                            prefManager.setUserType(loginModel.getUsertype());
+                            prefManager.setType(loginModel.getUsertype());
+                        }
+
+                        if (loginModel.getMsg() != null && !loginModel.getMsg().equals("null")
+                                && (loginModel.getMsg().equalsIgnoreCase("OTP sent successfully.")
+                                || loginModel.getMsg().equalsIgnoreCase("Login Success"))) {
                             prefManager.setIsUserLogin(true);
-                            Intent intent = new Intent(LoginActivity.this, OtpVerificationActivity.class);
+                            Intent intent = new Intent(LoginActivity.this, ExistNetworkActivity.class);
                             intent.putExtra("Number", loginModel.getMobileNumber());
                             intent.putExtra("userName", userName);
                             intent.putExtra("password", passWord);
@@ -158,7 +169,6 @@ public class LoginActivity extends AppCompatActivity {
                     } catch (Exception e) {
                         Log.d("Exception", Objects.requireNonNull(e.getLocalizedMessage()));
                     }
-//                    getProjectList();
                 } else {
                     stopBgAnimation();
                     binding.otpCard.setVisibility(View.VISIBLE);
@@ -187,8 +197,13 @@ public class LoginActivity extends AppCompatActivity {
         Retrofit retrofit = RetrofitClient.getClient(this);
         ApiInterface apiInterface = retrofit.create(ApiInterface.class);
 
-        Call<ProjectModel> call = apiInterface.getProject(
-                "Bearer " + prefManager.getAccessToken(), prefManager.getUserName());
+        String accessToken = prefManager.getAccessToken();
+        if (accessToken == null || accessToken.isEmpty()) {
+            Snackbar.make(findViewById(android.R.id.content), "Access token missing. Complete OTP verification.", Snackbar.LENGTH_LONG).show();
+            return;
+        }
+
+        Call<ProjectModel> call = apiInterface.getProject("Bearer " + accessToken, prefManager.getUserName());
 
         call.enqueue(new Callback<ProjectModel>() {
             @Override
