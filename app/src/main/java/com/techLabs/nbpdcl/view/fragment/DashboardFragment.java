@@ -359,80 +359,6 @@ public class DashboardFragment extends Fragment {
         });
         animator.start();
     }
-
-    /*private void updatePoleChart(List<MainFeeder.VoltageWise> voltageWise) {
-        int pss132 = 0;
-        int pss33 = 0;
-
-        int feeder11 = 0;
-        int feeder33 = 0;
-
-        if (voltageWise != null && !voltageWise.isEmpty()) {
-            List<Float> values = new ArrayList<>();
-            for (int i = 0; i < voltageWise.size(); i++) {
-                MainFeeder.VoltageWise item = voltageWise.get(i);
-                String voltage = item.getGroup2().trim(); // safety
-
-                Integer nt0 = item.getNetworkType0Count(); // Feeder
-                Integer nt1 = item.getNetworkType1Count(); // PSS
-
-                if ("132".equals(voltage)) {
-                    pss132 += (nt1 != null ? nt1 : 0);
-                } else if ("33".equals(voltage)) {
-                    pss33 += (nt1 != null ? nt1 : 0);
-                    feeder33 += (nt0 != null ? nt0 : 0);
-                } else if ("11".equals(voltage)) {
-                    feeder11 += (nt0 != null ? nt0 : 0);
-                }
-            }
-
-            if (feeder33 > 0) {
-                values.add((float) feeder33);
-            }
-
-            if (feeder11 > 0) {
-                values.add((float) feeder11);
-            }
-
-            if (pss132 > 0 && pss33 > 0) {
-                values.add((float) pss33 + pss132);
-            } else if (pss132 > 0) {
-                values.add((float) pss132);
-            } else {
-                values.add((float) pss33);
-            }
-
-            List<Integer> colors = new ArrayList<>();
-            colors.add(getColorCompat(R.color.feeder));
-            colors.add(getColorCompat(R.color.sub_station));
-            colors.add(getColorCompat(R.color.division));
-
-            // Vertical TEXT labels
-            List<String> verticalLabels = new ArrayList<>();
-            verticalLabels.add("Feeder");
-            verticalLabels.add("Feeder");
-            verticalLabels.add("PSS");
-
-            // Horizontal NUMBER labels
-            List<String> horizontalLabels = new ArrayList<>();
-            horizontalLabels.add("33 KV");
-            horizontalLabels.add("11 KV");
-            if (pss132 > 0 && pss33 > 0) {
-                values.add((float) pss33 + pss132);
-                horizontalLabels.add("132/33 KV");
-            } else if (pss132 > 0) {
-                values.add((float) pss132);
-                horizontalLabels.add("132 KV");
-            } else {
-                values.add((float) pss33);
-                horizontalLabels.add("33/11 KV");
-            }
-
-            binding.poleChart.setData(values, colors, verticalLabels, horizontalLabels);
-        }
-
-    }*/
-
     private void updatePoleChart(List<MainFeeder.VoltageWise> voltageWise) {
 
         binding.donutContainer.removeAllViews();
@@ -510,7 +436,6 @@ public class DashboardFragment extends Fragment {
 
         donut.setData(feeder, pss, feederColor, pssColor);
 
-//        int primaryColor = (pss > 0) ? pssColor : feederColor;
         int bgColorRes;
         if (title.startsWith("132/33")) {
             bgColorRes = R.color.pss_132;
@@ -571,10 +496,6 @@ public class DashboardFragment extends Fragment {
         }
 
         binding.donutContainer.addView(view);
-    }
-
-    private int getColorCompat(int id) {
-        return requireContext().getResources().getColor(id);
     }
 
     private void getProjectList() {

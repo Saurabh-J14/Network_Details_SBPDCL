@@ -164,7 +164,7 @@ public class ExistNetworkActivity extends AppCompatActivity implements SwipeRefr
         menu.getItem(2).setVisible(true);
         menu.getItem(3).setVisible(true);
         menu.getItem(4).setVisible(false);
-        menu.getItem(5).setVisible(false);
+        menu.getItem(5).setVisible(true);
         return true;
     }
 

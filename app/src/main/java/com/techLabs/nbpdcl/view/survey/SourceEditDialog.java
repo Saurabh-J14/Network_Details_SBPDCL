@@ -23,6 +23,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.techLabs.nbpdcl.R;
 import com.techLabs.nbpdcl.Utils.PrefManager;
+import com.techLabs.nbpdcl.Utils.UTMConverter;
 import com.techLabs.nbpdcl.Utils.callBack.AddDevice;
 import com.techLabs.nbpdcl.adapters.DynamicFragmentAdapter;
 import com.techLabs.nbpdcl.databinding.SourceEditDialogBinding;
@@ -75,8 +76,6 @@ public class SourceEditDialog extends Dialog {
         TabLayout tabLayout = binding.tablayout;
         adapter = new DynamicFragmentAdapter((FragmentActivity) mainContext);
 
-        /*adapter.addFragment(new SourceNetworkEditFragment(), "Network");
-        adapter.addFragment(new SourceEditFragment(lat, lon), "Source");*/
         networkFragment = new SourceNetworkEditFragment();
         sourceFragment = new SourceEditFragment(lat, lon);
 
@@ -124,18 +123,6 @@ public class SourceEditDialog extends Dialog {
         JSONObject sourceEditData = null;
         JSONObject sourceNetworkEditData = null;
 
-        /*Fragment sourceEditFragment = fragmentManager.findFragmentByTag("f1");
-
-        if (sourceEditFragment instanceof SourceEditFragment) {
-            if (sourceEditFragment.getView() != null) {
-                if (((SourceEditFragment) sourceEditFragment).checkAllFields()) {
-                    sourceEditData = ((SourceEditFragment) sourceEditFragment).getData();
-                    isSourceEditFragmentValid = true;
-                } else {
-                    Toast.makeText(mainContext, "Please fill all required fields in the Source tab.", Toast.LENGTH_SHORT).show();
-                }
-            }
-        }*/
         if (sourceFragment != null && sourceFragment.getView() != null) {
             if (sourceFragment.checkAllFields()) {
                 sourceEditData = sourceFragment.getData();
@@ -143,18 +130,6 @@ public class SourceEditDialog extends Dialog {
             }
         }
 
-        /*Fragment sourceNetworkEditFragment = fragmentManager.findFragmentByTag("f0");
-
-        if (sourceNetworkEditFragment instanceof SourceNetworkEditFragment) {
-            if (sourceNetworkEditFragment.getView() != null) {
-                if (((SourceNetworkEditFragment) sourceNetworkEditFragment).checkAllFields()) {
-                    sourceNetworkEditData = ((SourceNetworkEditFragment) sourceNetworkEditFragment).getData();
-                    isSourceNetworkEditFragmentValid = true;
-                } else {
-                    Snackbar.make(binding.getRoot(), "All field required in Both Tab", Snackbar.LENGTH_LONG).show();
-                }
-            }
-        }*/
         if (networkFragment != null && networkFragment.getView() != null) {
             if (networkFragment.checkAllFields()) {
                 sourceNetworkEditData = networkFragment.getData();
@@ -166,14 +141,19 @@ public class SourceEditDialog extends Dialog {
         if (isSourceEditFragmentValid && isSourceNetworkEditFragmentValid) {
             try {
                 JsonObject sectionObject = new JsonObject();
-                sectionObject.addProperty("Username", prefManager.getUserName());
+                sectionObject.addProperty("Username", prefManager.getUserType());
                 sectionObject.addProperty("NetworkId", sourceNetworkEditData.getString("networkName"));
-                sectionObject.addProperty("Mode", "Mobile");
+                sectionObject.addProperty("Mode", "Web");
                 sectionObject.addProperty("CYMDBNET", prefManager.getDBName());
                 JsonArray x = new JsonArray();
                 JsonArray y = new JsonArray();
-                x.add(sourceEditData.getString("Latitude"));
-                y.add(sourceEditData.getString("Longitude"));
+                double latValue = Double.parseDouble(sourceEditData.getString("Latitude"));
+                double lonValue = Double.parseDouble(sourceEditData.getString("Longitude"));
+                UTMConverter.Result utm = UTMConverter.fromLatLon(latValue, lonValue);
+                Log.d("UTM", "lat=" + latValue + ", lon=" + lonValue + ", easting=" + utm.easting
+                        + ", northing=" + utm.northing + ", zone=" + utm.getZone());
+                x.add(utm.easting);
+                y.add(utm.northing);
                 sectionObject.add("X", x);
                 sectionObject.add("Y", y);
 

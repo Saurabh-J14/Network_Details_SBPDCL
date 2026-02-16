@@ -74,6 +74,7 @@ import com.airbnb.lottie.LottieAnimationView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.techLabs.nbpdcl.R;
@@ -86,6 +87,7 @@ import com.techLabs.nbpdcl.Utils.OTFToBitmapConverter;
 import com.techLabs.nbpdcl.Utils.PrefManager;
 import com.techLabs.nbpdcl.Utils.ProgressBarLayout;
 import com.techLabs.nbpdcl.Utils.ResponseDataUtils;
+import com.techLabs.nbpdcl.Utils.UTMConverter;
 import com.techLabs.nbpdcl.Utils.callBack.AddDevice;
 import com.techLabs.nbpdcl.Utils.callBack.LoadAllocationArgument;
 import com.techLabs.nbpdcl.Utils.callBack.LoadFlowArgument;
@@ -2612,6 +2614,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
     }
 
     private void addNewSectionDevices(String sectionType, JsonObject jsonObject) {
+        conversionUTM(jsonObject);
         progressBarLayout.setProcessText("Add New Devices");
         progressBarLayout.setVisibility(View.VISIBLE);
         Retrofit retrofit = RetrofitClient.getClient(MapActivity.this);
@@ -3125,6 +3128,75 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                 toast.show();
             }
         });
+    }
+
+    private void conversionUTM(JsonObject jsonObject) {
+        try {
+            if (jsonObject == null || !jsonObject.has("Data")) {
+                return;
+            }
+            JsonArray dataArray = jsonObject.getAsJsonArray("Data");
+            for (JsonElement element : dataArray) {
+                if (element == null || !element.isJsonObject()) {
+                    continue;
+                }
+                JsonObject item = element.getAsJsonObject();
+                if (!item.has("Section")) {
+                    continue;
+                }
+                JsonObject section = item.getAsJsonObject("Section");
+                if (!section.has("X") || !section.has("Y")) {
+                    continue;
+                }
+
+                JsonArray xArray = section.getAsJsonArray("X");
+                JsonArray yArray = section.getAsJsonArray("Y");
+                if (xArray == null || yArray == null || xArray.size() != yArray.size()) {
+                    continue;
+                }
+
+                JsonArray newX = new JsonArray();
+                JsonArray newY = new JsonArray();
+                boolean convertedAny = false;
+
+                for (int i = 0; i < xArray.size(); i++) {
+                    double xVal;
+                    double yVal;
+                    try {
+                        JsonElement xEl = xArray.get(i);
+                        JsonElement yEl = yArray.get(i);
+                        xVal = (xEl == null || xEl.isJsonNull()) ? 0.0 : xEl.getAsDouble();
+                        yVal = (yEl == null || yEl.isJsonNull()) ? 0.0 : yEl.getAsDouble();
+                    } catch (Exception e) {
+                        xVal = 0.0;
+                        yVal = 0.0;
+                    }
+
+                    boolean looksLatLon = xVal >= -90.0 && xVal <= 90.0 && yVal >= -180.0 && yVal <= 180.0;
+                    if (looksLatLon) {
+                        UTMConverter.Result utm = UTMConverter.fromLatLon(xVal, yVal);
+                        newX.add(utm.easting);
+                        newY.add(utm.northing);
+                        convertedAny = true;
+                        if (i == 0) {
+                            Log.d("UTM", "Converted section coords lat=" + xVal + ", lon=" + yVal
+                                    + " -> easting=" + utm.easting + ", northing=" + utm.northing
+                                    + ", zone=" + utm.getZone());
+                        }
+                    } else {
+                        newX.add(xArray.get(i));
+                        newY.add(yArray.get(i));
+                    }
+                }
+
+                if (convertedAny) {
+                    section.add("X", newX);
+                    section.add("Y", newY);
+                }
+            }
+        } catch (Exception e) {
+            Log.d("UTM", "Failed to convert section coordinates: " + e.getLocalizedMessage());
+        }
     }
 
     private void clearVertexNode() {

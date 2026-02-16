@@ -70,7 +70,6 @@ public class OtpVerificationActivity extends AppCompatActivity {
         intent = getIntent();
         prefManager = new PrefManager(this);
         Glide.with(OtpVerificationActivity.this).load(R.drawable.otp_verify_bg).into(binding.otpBgImage);
-//        startAnimation();
         AppSignatureHelper helper = new AppSignatureHelper(this);
         List<String> appHashList = helper.getAppSignatures();
         if (!appHashList.isEmpty()) {
@@ -78,44 +77,6 @@ public class OtpVerificationActivity extends AppCompatActivity {
             Log.d("APP_HASH", appHash);
         }
 
-        /*EditText[] otpFields = new EditText[]{
-                binding.et1, binding.et2, binding.et3,
-                binding.et4, binding.et5, binding.et6
-        };
-
-        for (int i = 0; i < otpFields.length; i++) {
-            final int index = i;
-
-            otpFields[i].addTextChangedListener(new TextWatcher() {
-
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-                    if (s.length() == 1) {
-                        if (index < otpFields.length - 1) {
-                            otpFields[index + 1].requestFocus();
-                        }
-                    }
-
-                    else if (s.length() == 0 && before == 1) {
-                        if (index > 0) {
-                            otpFields[index - 1].requestFocus();
-                            otpFields[index - 1].setSelection(
-                                    otpFields[index - 1].getText().length()
-                            );
-                        }
-                    }
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {
-                }
-            });
-        }*/
         OtpViewHandler[] otpFields = new OtpViewHandler[]{
                 binding.et1, binding.et2, binding.et3,
                 binding.et4, binding.et5, binding.et6
@@ -160,12 +121,6 @@ public class OtpVerificationActivity extends AppCompatActivity {
             maskedNumber = "*******" + mobile.substring(7);
         }
         String message = "🔐 OTP has been sent to: " + maskedNumber;
-
-        /*Snackbar snackbar = Snackbar.make(binding.rootLayout, message, Snackbar.LENGTH_INDEFINITE);
-        snackbar.setAnchorView(binding.otpCard);
-        snackbar.setTextColor(Color.WHITE);
-        snackbar.setBackgroundTint(Color.parseColor("#285468"));
-        snackbar.show();*/
 
         binding.rootLayout.post(() -> {
 

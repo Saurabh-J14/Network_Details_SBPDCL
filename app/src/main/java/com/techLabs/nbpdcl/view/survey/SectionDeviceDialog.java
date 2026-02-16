@@ -28,6 +28,7 @@ import com.techLabs.nbpdcl.Utils.Args;
 import com.techLabs.nbpdcl.Utils.DefaultCustomer;
 import com.techLabs.nbpdcl.Utils.ListDataManager;
 import com.techLabs.nbpdcl.Utils.PrefManager;
+import com.techLabs.nbpdcl.Utils.UTMConverter;
 import com.techLabs.nbpdcl.Utils.callBack.AddDevice;
 import com.techLabs.nbpdcl.adapters.FragmentAdapter;
 import com.techLabs.nbpdcl.databinding.EditDeviceLayoutBinding;
@@ -895,14 +896,17 @@ public class SectionDeviceDialog extends Dialog {
                 sectionData.addProperty("Phase", phase);
                 sectionData.addProperty("NetworkId", networkId);
                 sectionData.addProperty("FromNodeID", nodeId);
-                sectionData.addProperty("Mode", "Mobile");
+                sectionData.addProperty("Mode", "Web");
                 sectionData.addProperty("CYMDBNET", prefManager.getDBName());
                 JsonArray latArray = new JsonArray();
                 JsonArray lonArray = new JsonArray();
                 if (newSectionGeoPointList != null) {
                     for (GeoPoint point : newSectionGeoPointList) {
-                        latArray.add(point.getLatitude());
-                        lonArray.add(point.getLongitude());
+                        double lat = point.getLatitude();
+                        double lon = point.getLongitude();
+                        UTMConverter.Result utm = UTMConverter.fromLatLon(lat, lon);
+                        latArray.add(utm.easting);
+                        lonArray.add(utm.northing);
                     }
                 }
                 sectionData.add("X", latArray);
@@ -961,6 +965,32 @@ public class SectionDeviceDialog extends Dialog {
 
     private void sendData() {
         if (adapter.getItemCount() == deviceArray.size()) {
+            try {
+                if (sectionData.has("X") && sectionData.has("Y")) {
+                    JsonArray xArray = sectionData.getAsJsonArray("X");
+                    JsonArray yArray = sectionData.getAsJsonArray("Y");
+                    if (xArray != null && yArray != null && xArray.size() == yArray.size()) {
+                        JsonArray newX = new JsonArray();
+                        JsonArray newY = new JsonArray();
+                        for (int i = 0; i < xArray.size(); i++) {
+                            double xVal = xArray.get(i).getAsDouble();
+                            double yVal = yArray.get(i).getAsDouble();
+                            if (xVal >= -90.0 && xVal <= 90.0 && yVal >= -180.0 && yVal <= 180.0) {
+                                UTMConverter.Result utm = UTMConverter.fromLatLon(xVal, yVal);
+                                newX.add(utm.easting);
+                                newY.add(utm.northing);
+                            } else {
+                                newX.add(xArray.get(i));
+                                newY.add(yArray.get(i));
+                            }
+                        }
+                        sectionData.add("X", newX);
+                        sectionData.add("Y", newY);
+                    }
+                }
+            } catch (Exception e) {
+                Log.d("UTM", "Failed to enforce UTM in sendData: " + e.getLocalizedMessage());
+            }
             JsonObject jsonObject = new JsonObject();
             JsonObject jsonObject1 = new JsonObject();
             jsonObject1.add("Section", sectionData);
