@@ -36,6 +36,7 @@ import android.os.StrictMode;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Gravity;
@@ -87,6 +88,7 @@ import com.techLabs.nbpdcl.Utils.OTFToBitmapConverter;
 import com.techLabs.nbpdcl.Utils.PrefManager;
 import com.techLabs.nbpdcl.Utils.ProgressBarLayout;
 import com.techLabs.nbpdcl.Utils.ResponseDataUtils;
+import com.techLabs.nbpdcl.Utils.UTMConversion;
 import com.techLabs.nbpdcl.Utils.UTMConverter;
 import com.techLabs.nbpdcl.Utils.callBack.AddDevice;
 import com.techLabs.nbpdcl.Utils.callBack.LoadAllocationArgument;
@@ -344,8 +346,6 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
         binding.map.getOverlayManager().getTilesOverlay().setLoadingBackgroundColor(Color.TRANSPARENT);
         binding.map.getOverlayManager().getTilesOverlay().setLoadingLineColor(Color.TRANSPARENT);
         binding.map.getController().setZoom(14);
-        GeoPoint center = new GeoPoint(19.075344279459458, 72.87758981236598);
-        binding.map.getController().animateTo(center);
         binding.map.getController().setZoom(18);
         intent = getIntent();
 
@@ -2619,7 +2619,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
         progressBarLayout.setVisibility(View.VISIBLE);
         Retrofit retrofit = RetrofitClient.getClient(MapActivity.this);
         ApiInterface apiInterface = retrofit.create(ApiInterface.class);
-        Call<JsonObject> call = apiInterface.getNetworkData("SurveyData/", jsonObject);
+        Call<JsonObject> call = apiInterface.getNetworkData("NewConnectionData/", jsonObject);
         call.enqueue(new Callback<JsonObject>() {
             @SuppressLint("SetTextI18n")
             @Override
@@ -2632,21 +2632,41 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         JSONObject responseData1 = new JSONObject(responseData.toString());
 
                         if (!responseData1.getJSONObject("output").getJSONObject("cables_data2").getJSONArray("features").toString().contains("[]")) {
+                            JSONObject cableObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("cables_data2").toString());
+                            for (int i = 0; i < cableObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = cableObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("LineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray point = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                        geometry.getJSONArray("coordinates").put(j, new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                    }
+                                } else if ("MultiLineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray line = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        for (int k = 0; k < line.length(); k++) {
+                                            org.json.JSONArray point = line.getJSONArray(k);
+                                            GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                            line.put(k, new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                        }
+                                    }
+                                }
+                            }
                             if (CableKml != null) {
-                                CableKml.parseGeoJSON(String.valueOf(responseData1.getJSONObject("output").getJSONObject("cables_data2")));
+                                CableKml.parseGeoJSON(cableObject.toString());
                                 KmlFeature.Styler styler = new MyKmlStyler(Color.RED, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) CableKml.mKmlRoot.buildOverlay(binding.map, null, styler, CableKml);
                                 for (Overlay item : folderOverlay.getItems()) {
                                     CableFolderOverLay.add(item);
                                     binding.map.invalidate();
                                 }
-                                for (int j = 0; j < responseData1.getJSONObject("output").getJSONObject("cables_data2").getJSONArray("features").length(); j++) {
-                                    CaObject.getJSONArray("features").put(responseData1.getJSONObject("output").getJSONObject("cables_data2").getJSONArray("features").get(j));
+                                for (int j = 0; j < cableObject.getJSONArray("features").length(); j++) {
+                                    CaObject.getJSONArray("features").put(cableObject.getJSONArray("features").get(j));
                                 }
                             } else {
-                                CaObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("cables_data2").toString());
+                                CaObject = new JSONObject(cableObject.toString());
                                 CableKml = new KmlDocument();
-                                CableKml.parseGeoJSON(String.valueOf(responseData1.getJSONObject("output").getJSONObject("cables_data2")));
+                                CableKml.parseGeoJSON(cableObject.toString());
                                 KmlFeature.Styler styler = new MyKmlStyler(Color.RED, binding.map);
                                 CableFolderOverLay = (FolderOverlay) CableKml.mKmlRoot.buildOverlay(binding.map, null, styler, CableKml);
                                 binding.map.getOverlays().add(CableFolderOverLay);
@@ -2676,21 +2696,43 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!responseData1.getJSONObject("output").getJSONObject("oh_data2").getJSONArray("features").toString().contains("[]")) {
-                            KmlFeature.Styler styler = new OverHeadKmlStyler(Color.BLUE, binding.map);
+                            JSONObject ohObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("oh_data2").toString());
+                            for (int i = 0; i < ohObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = ohObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("LineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray point = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                        geometry.getJSONArray("coordinates").put(j, new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                    }
+                                } else if ("MultiLineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray line = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        for (int k = 0; k < line.length(); k++) {
+                                            org.json.JSONArray point = line.getJSONArray(k);
+                                            GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                            line.put(k, new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                        }
+                                    }
+                                }
+                            }
+
                             if (OverHeadKml != null) {
-                                OverHeadKml.parseGeoJSON(String.valueOf(responseData1.getJSONObject("output").getJSONObject("oh_data2")));
+                                OverHeadKml.parseGeoJSON(ohObject.toString());
+                                KmlFeature.Styler styler = new OverHeadKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) OverHeadKml.mKmlRoot.buildOverlay(binding.map, null, styler, OverHeadKml);
                                 for (Overlay item : folderOverlay.getItems()) {
                                     OverheadFolderOverLay.add(item);
                                     binding.map.invalidate();
                                 }
-                                for (int j = 0; j < responseData1.getJSONObject("output").getJSONObject("oh_data2").getJSONArray("features").length(); j++) {
-                                    OhObject.getJSONArray("features").put(responseData1.getJSONObject("output").getJSONObject("oh_data2").getJSONArray("features").get(j));
+                                for (int j = 0; j < ohObject.getJSONArray("features").length(); j++) {
+                                    OhObject.getJSONArray("features").put(ohObject.getJSONArray("features").get(j));
                                 }
                             } else {
-                                OhObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("oh_data2").toString());
+                                OhObject = new JSONObject(ohObject.toString());
                                 OverHeadKml = new KmlDocument();
-                                OverHeadKml.parseGeoJSON(String.valueOf(responseData1.getJSONObject("output").getJSONObject("oh_data2")));
+                                OverHeadKml.parseGeoJSON(ohObject.toString());
+                                KmlFeature.Styler styler = new OverHeadKmlStyler(Color.BLUE, binding.map);
                                 OverheadFolderOverLay = (FolderOverlay) OverHeadKml.mKmlRoot.buildOverlay(binding.map, null, styler, OverHeadKml);
                                 binding.map.getOverlays().add(OverheadFolderOverLay);
                                 binding.map.invalidate();
@@ -2721,21 +2763,41 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!responseData1.getJSONObject("output").getJSONObject("ohunbal_data2").getJSONArray("features").toString().contains("[]")) {
+                            JSONObject unbalanceObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("ohunbal_data2").toString());
+                            for (int i = 0; i < unbalanceObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = unbalanceObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("LineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray point = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                        geometry.getJSONArray("coordinates").put(j, new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                    }
+                                } else if ("MultiLineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray line = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        for (int k = 0; k < line.length(); k++) {
+                                            org.json.JSONArray point = line.getJSONArray(k);
+                                            GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                            line.put(k, new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                        }
+                                    }
+                                }
+                            }
                             if (UnBalencedKml != null) {
-                                UnBalencedKml.parseGeoJSON(String.valueOf(responseData1.getJSONObject("output").getJSONObject("ohunbal_data2")));
+                                UnBalencedKml.parseGeoJSON(unbalanceObject.toString());
                                 KmlFeature.Styler styler = new UnbalanceKmlStyler(Color.BLACK, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) UnBalencedKml.mKmlRoot.buildOverlay(binding.map, null, styler, UnBalencedKml);
                                 for (Overlay item : folderOverlay.getItems()) {
                                     UnBalanceFolderOverLay.add(item);
                                     binding.map.invalidate();
                                 }
-                                for (int j = 0; j < responseData1.getJSONObject("output").getJSONObject("ohunbal_data2").getJSONArray("features").length(); j++) {
-                                    UnBalObject.getJSONArray("features").put(responseData1.getJSONObject("output").getJSONObject("ohunbal_data2").getJSONArray("features").get(j));
+                                for (int j = 0; j < unbalanceObject.getJSONArray("features").length(); j++) {
+                                    UnBalObject.getJSONArray("features").put(unbalanceObject.getJSONArray("features").get(j));
                                 }
                             } else {
-                                UnBalObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("ohunbal_data2").toString());
+                                UnBalObject = new JSONObject(unbalanceObject.toString());
                                 UnBalencedKml = new KmlDocument();
-                                UnBalencedKml.parseGeoJSON(String.valueOf(responseData1.getJSONObject("output").getJSONObject("ohunbal_data2")));
+                                UnBalencedKml.parseGeoJSON(unbalanceObject.toString());
                                 KmlFeature.Styler styler = new UnbalanceKmlStyler(Color.BLACK, binding.map);
                                 UnBalanceFolderOverLay = (FolderOverlay) UnBalencedKml.mKmlRoot.buildOverlay(binding.map, null, styler, UnBalencedKml);
                                 binding.map.getOverlays().add(UnBalanceFolderOverLay);
@@ -2766,17 +2828,38 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
 
                         }
 
+                        boolean renderedSectionFromResponse = false;
                         if (!responseData1.getJSONObject("output").getJSONObject("sectionnodev").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject sectionNodeObject = new JSONObject(String.valueOf(responseData1.getJSONObject("output").getJSONObject("sectionnodev")));
+                            for (int i = 0; i < sectionNodeObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = sectionNodeObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("LineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray point = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                        geometry.getJSONArray("coordinates").put(j, new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                    }
+                                } else if ("MultiLineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray line = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        for (int k = 0; k < line.length(); k++) {
+                                            org.json.JSONArray point = line.getJSONArray(k);
+                                            GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                            line.put(k, new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                        }
+                                    }
+                                }
+                            }
                             if (sectionNodeKml != null) {
-                                sectionNodeKml.parseGeoJSON(String.valueOf(responseData1.getJSONObject("output").getJSONObject("sectionnodev")));
+                                sectionNodeKml.parseGeoJSON(sectionNodeObject.toString());
                                 KmlFeature.Styler styler = new SectionNodeKmlStyler(Color.BLACK, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) sectionNodeKml.mKmlRoot.buildOverlay(binding.map, null, styler, sectionNodeKml);
                                 for (Overlay item : folderOverlay.getItems()) {
                                     sectionFolderOverLay.add(item);
                                 }
 
-                                for (int j = 0; j < responseData1.getJSONObject("output").getJSONObject("sectionnodev").getJSONArray("features").length(); j++) {
-                                    SecNodeObject.getJSONArray("features").put(responseData1.getJSONObject("output").getJSONObject("sectionnodev").getJSONArray("features").get(j));
+                                for (int j = 0; j < sectionNodeObject.getJSONArray("features").length(); j++) {
+                                    SecNodeObject.getJSONArray("features").put(sectionNodeObject.getJSONArray("features").get(j));
                                 }
 
                                 for (int i = 0; i < SecNodeObject.getJSONArray("features").length(); i++) {
@@ -2784,7 +2867,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
 
                             } else {
-                                SecNodeObject = new JSONObject(String.valueOf(responseData1.getJSONObject("output").getJSONObject("sectionnodev")));
+                                SecNodeObject = new JSONObject(sectionNodeObject.toString());
                                 sectionNodeKml = new KmlDocument();
                                 sectionNodeKml.parseGeoJSON(String.valueOf(SecNodeObject));
                                 KmlFeature.Styler styler = new SectionNodeKmlStyler(Color.BLACK, binding.map);
@@ -2796,11 +2879,21 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
 
                             }
+                            renderedSectionFromResponse = true;
                         }
 
                         if (!responseData1.getJSONObject("output").getJSONObject("cb_data2").getJSONArray("features").toString().contains("[]")) {
+                            JSONObject breakerObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("cb_data2").toString());
+                            for (int i = 0; i < breakerObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = breakerObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                    geometry.put("coordinates", new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                }
+                            }
                             if (BreakarKml != null) {
-                                BreakarKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("cb_data2").toString());
+                                BreakarKml.parseGeoJSON(breakerObject.toString());
                                 KmlFeature.Styler styler = new circuitBreakerKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) BreakarKml.mKmlRoot.buildOverlay(binding.map, null, styler, BreakarKml);
                                 for (Overlay item : folderOverlay.getItems()) {
@@ -2809,7 +2902,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 binding.map.invalidate();
                             } else {
                                 BreakarKml = new KmlDocument();
-                                BreakarKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("cb_data2").toString());
+                                BreakarKml.parseGeoJSON(breakerObject.toString());
                                 KmlFeature.Styler styler = new circuitBreakerKmlStyler(Color.BLUE, binding.map);
                                 CircuitBreakerOverLay = (FolderOverlay) BreakarKml.mKmlRoot.buildOverlay(binding.map, null, styler, BreakarKml);
                                 binding.map.invalidate();
@@ -2839,8 +2932,17 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!responseData1.getJSONObject("output").getJSONObject("switch_data2").getJSONArray("features").toString().contains("[]")) {
+                            JSONObject switchObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("switch_data2").toString());
+                            for (int i = 0; i < switchObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = switchObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                    geometry.put("coordinates", new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                }
+                            }
                             if (SwitchKml != null) {
-                                SwitchKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("switch_data2").toString());
+                                SwitchKml.parseGeoJSON(switchObject.toString());
                                 KmlFeature.Styler styler = new SwitchKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) SwitchKml.mKmlRoot.buildOverlay(binding.map, null, styler, SwitchKml);
                                 for (Overlay item : folderOverlay.getItems()) {
@@ -2849,7 +2951,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 binding.map.invalidate();
                             } else {
                                 SwitchKml = new KmlDocument();
-                                SwitchKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("switch_data2").toString());
+                                SwitchKml.parseGeoJSON(switchObject.toString());
                                 KmlFeature.Styler styler = new SwitchKmlStyler(Color.BLUE, binding.map);
                                 SwitchOverLay = (FolderOverlay) SwitchKml.mKmlRoot.buildOverlay(binding.map, null, styler, SwitchKml);
                             }
@@ -2878,8 +2980,17 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!responseData1.getJSONObject("output").getJSONObject("fuse_data2").getJSONArray("features").toString().contains("[]")) {
+                            JSONObject fuseObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("fuse_data2").toString());
+                            for (int i = 0; i < fuseObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = fuseObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                    geometry.put("coordinates", new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                }
+                            }
                             if (FuseKml != null) {
-                                FuseKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("fuse_data2").toString());
+                                FuseKml.parseGeoJSON(fuseObject.toString());
                                 KmlFeature.Styler styler = new FuseKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) FuseKml.mKmlRoot.buildOverlay(binding.map, null, styler, FuseKml);
                                 for (Overlay item : folderOverlay.getItems()) {
@@ -2887,7 +2998,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
                             } else {
                                 FuseKml = new KmlDocument();
-                                FuseKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("fuse_data2").toString());
+                                FuseKml.parseGeoJSON(fuseObject.toString());
                                 KmlFeature.Styler styler = new FuseKmlStyler(Color.BLUE, binding.map);
                                 FuseOverLay = (FolderOverlay) FuseKml.mKmlRoot.buildOverlay(binding.map, null, styler, FuseKml);
                             }
@@ -2916,8 +3027,17 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!responseData1.getJSONObject("output").getJSONObject("dt_data2").getJSONArray("features").toString().contains("[]")) {
+                            JSONObject transformerObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("dt_data2").toString());
+                            for (int i = 0; i < transformerObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = transformerObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                    geometry.put("coordinates", new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                }
+                            }
                             if (TransformerKml != null) {
-                                TransformerKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("dt_data2").toString());
+                                TransformerKml.parseGeoJSON(transformerObject.toString());
                                 KmlFeature.Styler styler = new DistributionTransferKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) TransformerKml.mKmlRoot.buildOverlay(binding.map, null, styler, TransformerKml);
                                 for (Overlay item : folderOverlay.getItems()) {
@@ -2925,7 +3045,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
                             } else {
                                 TransformerKml = new KmlDocument();
-                                TransformerKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("dt_data2").toString());
+                                TransformerKml.parseGeoJSON(transformerObject.toString());
                                 KmlFeature.Styler styler = new DistributionTransferKmlStyler(Color.BLUE, binding.map);
                                 DistributionTransferOverLay = (FolderOverlay) TransformerKml.mKmlRoot.buildOverlay(binding.map, null, styler, TransformerKml);
                             }
@@ -2954,8 +3074,17 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!responseData1.getJSONObject("output").getJSONObject("shunt_capacitor2").getJSONArray("features").toString().contains("[]")) {
+                            JSONObject capacitorObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("shunt_capacitor2").toString());
+                            for (int i = 0; i < capacitorObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = capacitorObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                    geometry.put("coordinates", new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                }
+                            }
                             if (ShuntCapacitorKml != null) {
-                                ShuntCapacitorKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("shunt_capacitor2").toString());
+                                ShuntCapacitorKml.parseGeoJSON(capacitorObject.toString());
                                 KmlFeature.Styler styler = new ShuntCapacitorKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) ShuntCapacitorKml.mKmlRoot.buildOverlay(binding.map, null, styler, ShuntCapacitorKml);
                                 for (Overlay item : folderOverlay.getItems()) {
@@ -2963,7 +3092,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
                             } else {
                                 ShuntCapacitorKml = new KmlDocument();
-                                ShuntCapacitorKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("shunt_capacitor2").toString());
+                                ShuntCapacitorKml.parseGeoJSON(capacitorObject.toString());
                                 KmlFeature.Styler styler = new ShuntCapacitorKmlStyler(Color.BLUE, binding.map);
                                 ShuntCapacitorOverLay = (FolderOverlay) ShuntCapacitorKml.mKmlRoot.buildOverlay(binding.map, null, styler, ShuntCapacitorKml);
                             }
@@ -2992,8 +3121,17 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!responseData1.getJSONObject("output").getJSONObject("spotload2").getJSONArray("features").toString().contains("[]")) {
+                            JSONObject spotloadObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("spotload2").toString());
+                            for (int i = 0; i < spotloadObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = spotloadObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                    geometry.put("coordinates", new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                }
+                            }
                             if (SpotloadKml != null) {
-                                SpotloadKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("spotload2").toString());
+                                SpotloadKml.parseGeoJSON(spotloadObject.toString());
                                 KmlFeature.Styler styler = new SpotLoadKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) SpotloadKml.mKmlRoot.buildOverlay(binding.map, null, styler, SpotloadKml);
                                 for (Overlay item : folderOverlay.getItems()) {
@@ -3001,7 +3139,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
                             } else {
                                 SpotloadKml = new KmlDocument();
-                                SpotloadKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("spotload2").toString());
+                                SpotloadKml.parseGeoJSON(spotloadObject.toString());
                                 KmlFeature.Styler styler = new SpotLoadKmlStyler(Color.BLUE, binding.map);
                                 SpotLoadOverLay = (FolderOverlay) SpotloadKml.mKmlRoot.buildOverlay(binding.map, null, styler, SpotloadKml);
                             }
@@ -3029,10 +3167,49 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                             binding.navigationmenu.setAdapter(adapter);
                         }
 
-                        if (!responseData1.getJSONObject("output").getJSONObject("node_data2").getJSONArray("features").toString().equals("[]")) {
+                        if (!jsonObject.getAsJsonArray("Data").get(0).getAsJsonObject()
+                                .getAsJsonArray("Device").get(0).getAsJsonObject()
+                                .get("DeviceType").getAsString().equals("1")
+                                && !jsonObject.getAsJsonArray("Data").get(0).getAsJsonObject()
+                                .getAsJsonArray("Device").get(0).getAsJsonObject()
+                                .get("DeviceType").getAsString().equals("2")
+                                && !jsonObject.getAsJsonArray("Data").get(0).getAsJsonObject()
+                                .getAsJsonArray("Device").get(0).getAsJsonObject()
+                                .get("DeviceType").getAsString().equals("23")
+                                && !renderedSectionFromResponse && newSectionGeoPointList.size() >= 2) {
+                            Polyline polyline = new Polyline();
+                            polyline.setPoints(new ArrayList<>(newSectionGeoPointList));
+                            polyline.setColor(Color.BLACK);
+                            polyline.setWidth(3.5f);
+                            polyline.setEnabled(true);
+                            polyline.setVisible(true);
+                            polyline.setGeodesic(true);
+                            polyline.setDensityMultiplier(9.5f);
+                            secNodeList.add(polyline);
+
+                            if (sectionFolderOverLay == null) {
+                                sectionFolderOverLay = new FolderOverlay();
+                                binding.map.getOverlays().add(sectionFolderOverLay);
+                            }
+
+                            sectionFolderOverLay.add(polyline);
+                            binding.map.invalidate();
+                        }
+
+                        if (!responseData1.getJSONObject("output").isNull("node_data2")
+                                && !responseData1.getJSONObject("output").getJSONObject("node_data2").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject nodeObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("node_data2").toString());
+                            for (int i = 0; i < nodeObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = nodeObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                    geometry.put("coordinates", new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                }
+                            }
                             KmlFeature.Styler nodeStyler = new NodeKmlStyler(Color.BLUE, binding.map);
                             if (NodeKml != null) {
-                                NodeKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("node_data2").toString());
+                                NodeKml.parseGeoJSON(nodeObject.toString());
                                 FolderOverlay folderOverlay1 = (FolderOverlay) NodeKml.mKmlRoot.buildOverlay(binding.map, null, nodeStyler, NodeKml);
                                 for (Overlay item : folderOverlay1.getItems()) {
                                     nodeOverLay.add(item);
@@ -3040,7 +3217,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
                             } else {
                                 NodeKml = new KmlDocument();
-                                NodeKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("node_data2").toString());
+                                NodeKml.parseGeoJSON(nodeObject.toString());
                                 nodeOverLay = (FolderOverlay) NodeKml.mKmlRoot.buildOverlay(binding.map, null, nodeStyler, NodeKml);
                                 binding.map.getOverlays().add(nodeOverLay);
                                 binding.map.invalidate();
@@ -3049,8 +3226,17 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
 
                         if (sectionType.equals("0")) {
                             if (!responseData1.getJSONObject("output").getJSONObject("HEADNODE").getJSONArray("features").toString().contains("[]")) {
+                                JSONObject headNodeObject = new JSONObject(responseData1.getJSONObject("output").getJSONObject("HEADNODE").toString());
+                                for (int i = 0; i < headNodeObject.getJSONArray("features").length(); i++) {
+                                    JSONObject geometry = headNodeObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                    if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                        org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                        GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                        geometry.put("coordinates", new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                    }
+                                }
                                 KmlDocument SourceKml = new KmlDocument();
-                                SourceKml.parseGeoJSON(responseData1.getJSONObject("output").getJSONObject("HEADNODE").toString());
+                                SourceKml.parseGeoJSON(headNodeObject.toString());
                                 KmlFeature.Styler styler = new SourceKmlStyler(Color.BLUE, binding.map);
                                 SourceOverLay = (FolderOverlay) SourceKml.mKmlRoot.buildOverlay(binding.map, null, styler, SourceKml);
                                 FolderOverlay newSource = (FolderOverlay) SourceKml.mKmlRoot.buildOverlay(binding.map, null, styler, SourceKml);
@@ -3068,6 +3254,16 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 adapter = new ExpandableDeviceAdapter(MapActivity.this, continentList);
                                 binding.navigationmenu.setAdapter(adapter);
                             }
+                        }
+
+                        if (SourceOverLay != null && binding.map.getOverlays().contains(SourceOverLay)) {
+                            binding.map.getOverlays().remove(SourceOverLay);
+                            binding.map.getOverlays().add(SourceOverLay);
+                        }
+
+                        if (nodeOverLay != null && binding.map.getOverlays().contains(nodeOverLay)) {
+                            binding.map.getOverlays().remove(nodeOverLay);
+                            binding.map.getOverlays().add(nodeOverLay);
                         }
 
                         clearVertexNode();
@@ -3224,11 +3420,11 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                 binding.map.getOverlays().remove(newPolyLineList.get(i));
                 binding.map.invalidate();
             }
+            newPolyLineList.clear();
         }
 
         selectedNodeID = null;
     }
-
     private void CancelAnalysis() {
 
         if (CaPolylineList != null && !CaPolylineList.isEmpty()) {
@@ -3840,9 +4036,17 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         assert zoomToLayer != null;
                         if (!zoomToLayer.getOutput().contains("[]") && !zoomToLayer.getOutput().isEmpty()) {
                             if (zoomToLayer.getOutput().get(0).getY() != null && zoomToLayer.getOutput().get(0).getX() != null) {
-                                Double x = Double.valueOf(zoomToLayer.getOutput().get(0).getY());
-                                Double y = Double.valueOf(zoomToLayer.getOutput().get(0).getX());
-                                if (x != 0 && y != 0) {
+                                Double rawX = Double.valueOf(zoomToLayer.getOutput().get(0).getX());
+                                Double rawY = Double.valueOf(zoomToLayer.getOutput().get(0).getY());
+                                GeoPoint deviceGeoPoint;
+                                boolean looksLatLon = rawY >= -90.0 && rawY <= 90.0 && rawX >= -180.0 && rawX <= 180.0;
+                                if (looksLatLon) {
+                                    deviceGeoPoint = new GeoPoint(rawY, rawX);
+                                } else {
+                                    UTMConverter.LatLon latLon = UTMConverter.toLatLon(rawX, rawY, 43, true);
+                                    deviceGeoPoint = new GeoPoint(latLon.latitude, latLon.longitude);
+                                }
+                                if (deviceGeoPoint != null) {
                                     if (zoomToLayer.getOutput().get(0).getDeviceType() != null && !zoomToLayer.getOutput().get(0).getDeviceType().isEmpty() && zoomToLayer.getOutput().get(0).getDeviceNumber() != null && !zoomToLayer.getOutput().get(0).getDeviceNumber().isEmpty()) {
                                         if (Config.isLoadFlow) {
                                             if (zoomToLayer.getOutput().get(0).getDeviceType().contains("8")) {
@@ -3870,9 +4074,8 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                                     highlightLoadFlowDevice(spotLoadSectionId.get(zoomToLayer.getOutput().get(0).getDeviceNumber()), zoomToLayer.getOutput().get(0).getDeviceType(), zoomToLayer.getOutput().get(0).getSectionId(), Integer.parseInt(zoomToLayer.getOutput().get(0).getLocation()));
                                                 }
                                             } else {
-                                                GeoPoint geoPoint = new GeoPoint(x, y);
-                                                binding.map.getController().animateTo(geoPoint, 27.0, 0L);
-                                                binding.map.getController().setCenter(geoPoint);
+                                                binding.map.getController().animateTo(deviceGeoPoint, 27.0, 0L);
+                                                binding.map.getController().setCenter(deviceGeoPoint);
                                                 binding.map.invalidate();
                                             }
                                         } else if (Config.isShortCircuit) {
@@ -3901,9 +4104,8 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                                     highlightShortCircuitDevice(spotLoadSectionId.get(zoomToLayer.getOutput().get(0).getDeviceNumber()), zoomToLayer.getOutput().get(0).getDeviceType(), zoomToLayer.getOutput().get(0).getSectionId(), Integer.parseInt(zoomToLayer.getOutput().get(0).getLocation()));
                                                 }
                                             } else {
-                                                GeoPoint geoPoint = new GeoPoint(x, y);
-                                                binding.map.getController().animateTo(geoPoint, 27.0, 0L);
-                                                binding.map.getController().setCenter(geoPoint);
+                                                binding.map.getController().animateTo(deviceGeoPoint, 27.0, 0L);
+                                                binding.map.getController().setCenter(deviceGeoPoint);
                                                 binding.map.invalidate();
                                             }
                                         } else {
@@ -3932,20 +4134,18 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                                     highlightDevice(spotLoadSectionId.get(zoomToLayer.getOutput().get(0).getDeviceNumber()), zoomToLayer.getOutput().get(0).getDeviceType(), zoomToLayer.getOutput().get(0).getDeviceNumber(), zoomToLayer.getOutput().get(0).getSectionId(), Integer.parseInt(zoomToLayer.getOutput().get(0).getLocation()));
                                                 }
                                             } else {
-                                                GeoPoint geoPoint = new GeoPoint(x, y);
-                                                binding.map.getController().animateTo(geoPoint, 27.0, 0L);
-                                                binding.map.getController().setCenter(geoPoint);
+                                                binding.map.getController().animateTo(deviceGeoPoint, 27.0, 0L);
+                                                binding.map.getController().setCenter(deviceGeoPoint);
                                                 binding.map.invalidate();
                                             }
                                         }
                                     }
-                                    GeoPoint geoPoint = new GeoPoint(x, y);
-                                    binding.map.getController().animateTo(geoPoint, 27.0, 0L);
-                                    binding.map.getController().setCenter(geoPoint);
+                                    binding.map.getController().animateTo(deviceGeoPoint, 27.0, 0L);
+                                    binding.map.getController().setCenter(deviceGeoPoint);
                                     binding.map.invalidate();
                                 }
                             } else {
-                                Snackbar snack = Snackbar.make(findViewById(android.R.id.content), "Not Found LatLon!", Snackbar.LENGTH_LONG);
+                                Snackbar snack = Snackbar.make(findViewById(android.R.id.content), "Not Found Location!", Snackbar.LENGTH_LONG);
                                 snack.show();
                             }
                         }
@@ -4730,7 +4930,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
     }
 
     private void addNewSections(List<GeoPoint> geoPoint) {
-        GeoPoint lastGeoPoint = new GeoPoint(geoPoint.get(geoPoint.size() - 1));
+//        GeoPoint lastGeoPoint = new GeoPoint(geoPoint.get(geoPoint.size() - 1));
         Polyline line = new Polyline();
         line.setPoints(geoPoint);
         line.getOutlinePaint().setColor(Color.parseColor("#14C61B"));
@@ -4740,7 +4940,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
         binding.map.getOverlayManager().add(line);
         newPolyLineList.add(line);
         binding.map.invalidate();
-        coordinateList.add(lastGeoPoint);
+//        coordinateList.add(lastGeoPoint);
     }
 
     private void highlightDevice(Marker marker, String type, String DeviceNumber, String SectionID, int location) {
@@ -7707,22 +7907,38 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                 if (!jsonObject.toString().isEmpty() && !jsonObject.toString().trim().equals("null")) {
                     JSONObject object = new JSONObject();
                     object = jsonObject.getJSONObject("output");
-                    if (!object.getJSONObject("cables_data2").getJSONArray("features").toString().equals("[]") || !object.getJSONObject("oh_data2").getJSONArray("features").toString().equals("[]") || !object.getJSONObject("oh_data2").getJSONArray("features").toString().equals("[]") || !object.getJSONObject("HEADNODE").getJSONArray("features").toString().equals("[]")) {
+                    if (!object.getJSONObject("cables_data2").getJSONArray("features").toString().equals("[]") || !object.getJSONObject("oh_data2").getJSONArray("features").toString().equals("[]") || !object.getJSONObject("oh_data2").getJSONArray("features").toString().equals("[]") || !object.getJSONObject("HEADNODE").getJSONArray("features").toString().equals("[]") || !object.getJSONObject("source_data2").getJSONArray("features").toString().equals("[]")) {
 
-                        if (!object.getJSONObject("HEADNODE").getJSONArray("features").toString().equals("[]")) {
+                        if (!object.getJSONObject("HEADNODE").getJSONArray("features").toString().equals("[]") || !object.getJSONObject("source_data2").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject sourceObject;
+                            if (!object.getJSONObject("HEADNODE").getJSONArray("features").toString().equals("[]")) {
+                                sourceObject = new JSONObject(object.getJSONObject("HEADNODE").toString());
+                            } else {
+                                sourceObject = new JSONObject(object.getJSONObject("source_data2").toString());
+                            }
+
+                            for (int i = 0; i < sourceObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = sourceObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    GeoPoint geoPoint = UTMConversion.convert(point.getDouble(0), point.getDouble(1));
+                                    geometry.put("coordinates", new org.json.JSONArray().put(geoPoint.getLongitude()).put(geoPoint.getLatitude()));
+                                }
+                            }
+
                             if (sourceKml != null) {
-                                sourceKml.parseGeoJSON(object.getJSONObject("HEADNODE").toString());
+                                sourceKml.parseGeoJSON(sourceObject.toString());
                                 KmlFeature.Styler styler = new SourceKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) sourceKml.mKmlRoot.buildOverlay(binding.map, null, styler, sourceKml);
                                 SourceOverLay.add(folderOverlay);
-                                double x = Double.parseDouble(object.getJSONObject("HEADNODE").getJSONArray("features").getJSONObject(0).getJSONObject("properties").getString("fromy"));
-                                double y = Double.parseDouble(object.getJSONObject("HEADNODE").getJSONArray("features").getJSONObject(0).getJSONObject("properties").getString("fromX"));
-                                sourcePoint = new GeoPoint(x, y);
+                                double utmX = sourceObject.getJSONArray("features").getJSONObject(0).getJSONObject("properties").getDouble("fromX");
+                                double utmY = sourceObject.getJSONArray("features").getJSONObject(0).getJSONObject("properties").getDouble("fromy");
+                                sourcePoint = UTMConversion.convert(utmX, utmY);
 
                                 for (int i = 0; i < continentList.size(); i++) {
                                     if (continentList.get(i).getName().contains("Feeder ID")) {
-                                        for (int j = 0; j < object.getJSONObject("HEADNODE").getJSONArray("features").length(); j++) {
-                                            DType type = new DType(object.getJSONObject("HEADNODE").getJSONArray("features").getJSONObject(j).getJSONObject("properties").getString("NetworkId"), 43);
+                                        for (int j = 0; j < sourceObject.getJSONArray("features").length(); j++) {
+                                            DType type = new DType(sourceObject.getJSONArray("features").getJSONObject(j).getJSONObject("properties").getString("NetworkId"), 43);
                                             continentList.get(i).getDeviceList().add(type);
                                             continentList.get(i).setName("Feeder ID" + " " + "(" + continentList.get(i).getDeviceList().size() + ")");
                                         }
@@ -7730,20 +7946,20 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
                             } else {
                                 sourceKml = new KmlDocument();
-                                sourceKml.parseGeoJSON(object.getJSONObject("HEADNODE").toString());
+                                sourceKml.parseGeoJSON(sourceObject.toString());
                                 KmlFeature.Styler styler = new SourceKmlStyler(Color.BLUE, binding.map);
                                 SourceOverLay = (FolderOverlay) sourceKml.mKmlRoot.buildOverlay(binding.map, null, styler, sourceKml);
 
-                                double x = Double.parseDouble(object.getJSONObject("HEADNODE").getJSONArray("features").getJSONObject(0).getJSONObject("properties").getString("fromy"));
-                                double y = Double.parseDouble(object.getJSONObject("HEADNODE").getJSONArray("features").getJSONObject(0).getJSONObject("properties").getString("fromX"));
-                                sourcePoint = new GeoPoint(x, y);
+                                double utmX = sourceObject.getJSONArray("features").getJSONObject(0).getJSONObject("properties").getDouble("fromX");
+                                double utmY = sourceObject.getJSONArray("features").getJSONObject(0).getJSONObject("properties").getDouble("fromy");
+                                sourcePoint = UTMConversion.convert(utmX, utmY);
 
                                 ArrayList<DType> list = new ArrayList<>();
                                 DType type;
-                                for (int i = 0; i < object.getJSONObject("HEADNODE").getJSONArray("features").length(); i++) {
-                                    type = new DType(object.getJSONObject("HEADNODE").getJSONArray("features").getJSONObject(i).getJSONObject("properties").getString("NetworkId"), 43);
+                                for (int i = 0; i < sourceObject.getJSONArray("features").length(); i++) {
+                                    type = new DType(sourceObject.getJSONArray("features").getJSONObject(i).getJSONObject("properties").getString("NetworkId"), 43);
                                     list.add(type);
-                                    DeviceName deviceName = new DeviceName(object.getJSONObject("HEADNODE").getJSONArray("features").getJSONObject(i).getJSONObject("properties").getString("NetworkId"), "43");
+                                    DeviceName deviceName = new DeviceName(sourceObject.getJSONArray("features").getJSONObject(i).getJSONObject("properties").getString("NetworkId"), "43");
                                     mList.add(deviceName);
                                 }
                                 Continent continent = new Continent("Feeder ID" + " " + "(" + list.size() + ")", list);
@@ -7752,8 +7968,28 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!object.getJSONObject("cables_data2").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject cableObject = new JSONObject(object.getJSONObject("cables_data2").toString());
+                            for (int i = 0; i < cableObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = cableObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("LineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray point = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                        geometry.getJSONArray("coordinates").put(j, new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                    }
+                                } else if ("MultiLineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray line = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        for (int k = 0; k < line.length(); k++) {
+                                            org.json.JSONArray point = line.getJSONArray(k);
+                                            UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                            line.put(k, new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                        }
+                                    }
+                                }
+                            }
                             if (CableKml != null) {
-                                CableKml.parseGeoJSON(object.getJSONObject("cables_data2").toString());
+                                CableKml.parseGeoJSON(cableObject.toString());
                                 KmlFeature.Styler styler = new MyKmlStyler(Color.RED, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) CableKml.mKmlRoot.buildOverlay(binding.map, null, styler, CableKml);
                                 CableFolderOverLay.add(folderOverlay);
@@ -7770,12 +8006,12 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
 
                                 for (int j = 0; j < object.getJSONObject("cables_data2").getJSONArray("features").length(); j++) {
-                                    CaObject.getJSONArray("features").put(object.getJSONObject("cables_data2").getJSONArray("features").get(j));
+                                    CaObject.getJSONArray("features").put(cableObject.getJSONArray("features").get(j));
                                 }
                             } else {
-                                CaObject = new JSONObject(object.getJSONObject("cables_data2").toString());
+                                CaObject = new JSONObject(cableObject.toString());
                                 CableKml = new KmlDocument();
-                                CableKml.parseGeoJSON(object.getJSONObject("cables_data2").toString());
+                                CableKml.parseGeoJSON(cableObject.toString());
                                 KmlFeature.Styler styler = new MyKmlStyler(Color.RED, binding.map);
                                 CableFolderOverLay = (FolderOverlay) CableKml.mKmlRoot.buildOverlay(binding.map, null, styler, CableKml);
 
@@ -7795,8 +8031,28 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!object.getJSONObject("oh_data2").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject ohObject = new JSONObject(object.getJSONObject("oh_data2").toString());
+                            for (int i = 0; i < ohObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = ohObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("LineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray point = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                        geometry.getJSONArray("coordinates").put(j, new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                    }
+                                } else if ("MultiLineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray line = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        for (int k = 0; k < line.length(); k++) {
+                                            org.json.JSONArray point = line.getJSONArray(k);
+                                            UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                            line.put(k, new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                        }
+                                    }
+                                }
+                            }
                             if (OverHeadKml != null) {
-                                OverHeadKml.parseGeoJSON(object.getJSONObject("oh_data2").toString());
+                                OverHeadKml.parseGeoJSON(ohObject.toString());
                                 KmlFeature.Styler styler = new OverHeadKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) OverHeadKml.mKmlRoot.buildOverlay(binding.map, null, styler, OverHeadKml);
                                 OverheadFolderOverLay.add(folderOverlay);
@@ -7812,13 +8068,13 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
 
                                 for (int j = 0; j < object.getJSONObject("oh_data2").getJSONArray("features").length(); j++) {
-                                    OhObject.getJSONArray("features").put(object.getJSONObject("oh_data2").getJSONArray("features").get(j));
+                                    OhObject.getJSONArray("features").put(ohObject.getJSONArray("features").get(j));
                                 }
 
                             } else {
-                                OhObject = new JSONObject(object.getJSONObject("oh_data2").toString());
+                                OhObject = new JSONObject(ohObject.toString());
                                 OverHeadKml = new KmlDocument();
-                                OverHeadKml.parseGeoJSON(object.getJSONObject("oh_data2").toString());
+                                OverHeadKml.parseGeoJSON(ohObject.toString());
                                 KmlFeature.Styler styler = new OverHeadKmlStyler(Color.BLUE, binding.map);
                                 OverheadFolderOverLay = (FolderOverlay) OverHeadKml.mKmlRoot.buildOverlay(binding.map, null, styler, OverHeadKml);
 
@@ -7838,8 +8094,28 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!object.getJSONObject("ohunbal_data2").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject unbalanceObject = new JSONObject(object.getJSONObject("ohunbal_data2").toString());
+                            for (int i = 0; i < unbalanceObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = unbalanceObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("LineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray point = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                        geometry.getJSONArray("coordinates").put(j, new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                    }
+                                } else if ("MultiLineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray line = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        for (int k = 0; k < line.length(); k++) {
+                                            org.json.JSONArray point = line.getJSONArray(k);
+                                            UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                            line.put(k, new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                        }
+                                    }
+                                }
+                            }
                             if (UnBalencedKml != null) {
-                                UnBalencedKml.parseGeoJSON(object.getJSONObject("ohunbal_data2").toString());
+                                UnBalencedKml.parseGeoJSON(unbalanceObject.toString());
                                 KmlFeature.Styler styler = new UnbalanceKmlStyler(Color.BLACK, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) UnBalencedKml.mKmlRoot.buildOverlay(binding.map, null, styler, UnBalencedKml);
                                 UnBalanceFolderOverLay.add(folderOverlay);
@@ -7855,13 +8131,13 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
 
                                 for (int j = 0; j < object.getJSONObject("ohunbal_data2").getJSONArray("features").length(); j++) {
-                                    UnBalObject.getJSONArray("features").put(object.getJSONObject("ohunbal_data2").getJSONArray("features").get(j));
+                                    UnBalObject.getJSONArray("features").put(unbalanceObject.getJSONArray("features").get(j));
                                 }
 
                             } else {
-                                UnBalObject = new JSONObject(object.getJSONObject("ohunbal_data2").toString());
+                                UnBalObject = new JSONObject(unbalanceObject.toString());
                                 UnBalencedKml = new KmlDocument();
-                                UnBalencedKml.parseGeoJSON(object.getJSONObject("ohunbal_data2").toString());
+                                UnBalencedKml.parseGeoJSON(unbalanceObject.toString());
                                 KmlFeature.Styler styler = new UnbalanceKmlStyler(Color.BLACK, binding.map);
                                 UnBalanceFolderOverLay = (FolderOverlay) UnBalencedKml.mKmlRoot.buildOverlay(binding.map, null, styler, UnBalencedKml);
 
@@ -7879,21 +8155,41 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!object.getJSONObject("sectionnodev").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject sectionNodeObject = new JSONObject(object.getJSONObject("sectionnodev").toString());
+                            for (int i = 0; i < sectionNodeObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = sectionNodeObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("LineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray point = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                        geometry.getJSONArray("coordinates").put(j, new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                    }
+                                } else if ("MultiLineString".equalsIgnoreCase(geometry.getString("type"))) {
+                                    for (int j = 0; j < geometry.getJSONArray("coordinates").length(); j++) {
+                                        org.json.JSONArray line = geometry.getJSONArray("coordinates").getJSONArray(j);
+                                        for (int k = 0; k < line.length(); k++) {
+                                            org.json.JSONArray point = line.getJSONArray(k);
+                                            UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                            line.put(k, new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                        }
+                                    }
+                                }
+                            }
                             if (sectionNodeKml != null) {
-                                sectionNodeKml.parseGeoJSON(String.valueOf(object.getJSONObject("sectionnodev")));
+                                sectionNodeKml.parseGeoJSON(sectionNodeObject.toString());
                                 KmlFeature.Styler styler = new SectionNodeKmlStyler(Color.BLACK, binding.map);
 
                                 FolderOverlay folderOverlay = (FolderOverlay) sectionNodeKml.mKmlRoot.buildOverlay(binding.map, null, styler, sectionNodeKml);
                                 sectionFolderOverLay.add(folderOverlay);
                                 for (int j = 0; j < object.getJSONObject("sectionnodev").getJSONArray("features").length(); j++) {
-                                    SecNodeObject.getJSONArray("features").put(object.getJSONObject("sectionnodev").getJSONArray("features").get(j));
+                                    SecNodeObject.getJSONArray("features").put(sectionNodeObject.getJSONArray("features").get(j));
                                 }
 
                                 for (int i = 0; i < SecNodeObject.getJSONArray("features").length(); i++) {
                                     spLineSectionList.add(SecNodeObject.getJSONArray("features").getJSONObject(i).getJSONObject("properties").getString("DeviceNumber"));
                                 }
                             } else {
-                                SecNodeObject = new JSONObject(object.getJSONObject("sectionnodev").toString());
+                                SecNodeObject = new JSONObject(sectionNodeObject.toString());
                                 sectionNodeKml = new KmlDocument();
                                 sectionNodeKml.parseGeoJSON(String.valueOf(SecNodeObject));
                                 KmlFeature.Styler styler = new SectionNodeKmlStyler(Color.BLACK, binding.map);
@@ -7905,8 +8201,17 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!object.getJSONObject("cb_data2").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject breakerObject = new JSONObject(object.getJSONObject("cb_data2").toString());
+                            for (int i = 0; i < breakerObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = breakerObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                    geometry.put("coordinates", new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                }
+                            }
                             if (BreakarKml != null) {
-                                BreakarKml.parseGeoJSON(object.getJSONObject("cb_data2").toString());
+                                BreakarKml.parseGeoJSON(breakerObject.toString());
                                 KmlFeature.Styler styler = new circuitBreakerKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) BreakarKml.mKmlRoot.buildOverlay(binding.map, null, styler, BreakarKml);
                                 CircuitBreakerOverLay.add(folderOverlay);
@@ -7923,7 +8228,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
                             } else {
                                 BreakarKml = new KmlDocument();
-                                BreakarKml.parseGeoJSON(object.getJSONObject("cb_data2").toString());
+                                BreakarKml.parseGeoJSON(breakerObject.toString());
                                 KmlFeature.Styler styler = new circuitBreakerKmlStyler(Color.BLUE, binding.map);
                                 CircuitBreakerOverLay = (FolderOverlay) BreakarKml.mKmlRoot.buildOverlay(binding.map, null, styler, BreakarKml);
 
@@ -7941,8 +8246,17 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!object.getJSONObject("dt_data2").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject transformerObject = new JSONObject(object.getJSONObject("dt_data2").toString());
+                            for (int i = 0; i < transformerObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = transformerObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                    geometry.put("coordinates", new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                }
+                            }
                             if (TransformerKml != null) {
-                                TransformerKml.parseGeoJSON(object.getJSONObject("dt_data2").toString());
+                                TransformerKml.parseGeoJSON(transformerObject.toString());
                                 KmlFeature.Styler styler = new DistributionTransferKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) TransformerKml.mKmlRoot.buildOverlay(binding.map, null, styler, TransformerKml);
                                 DistributionTransferOverLay.add(folderOverlay);
@@ -7964,7 +8278,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
                             } else {
                                 TransformerKml = new KmlDocument();
-                                TransformerKml.parseGeoJSON(object.getJSONObject("dt_data2").toString());
+                                TransformerKml.parseGeoJSON(transformerObject.toString());
                                 KmlFeature.Styler styler = new DistributionTransferKmlStyler(Color.BLUE, binding.map);
                                 DistributionTransferOverLay = (FolderOverlay) TransformerKml.mKmlRoot.buildOverlay(binding.map, null, styler, TransformerKml);
 
@@ -7991,8 +8305,17 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!object.getJSONObject("fuse_data2").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject fuseObject = new JSONObject(object.getJSONObject("fuse_data2").toString());
+                            for (int i = 0; i < fuseObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = fuseObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                    geometry.put("coordinates", new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                }
+                            }
                             if (FuseKml != null) {
-                                FuseKml.parseGeoJSON(object.getJSONObject("fuse_data2").toString());
+                                FuseKml.parseGeoJSON(fuseObject.toString());
                                 KmlFeature.Styler styler = new FuseKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) FuseKml.mKmlRoot.buildOverlay(binding.map, null, styler, FuseKml);
                                 FuseOverLay.add(folderOverlay);
@@ -8008,7 +8331,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
                             } else {
                                 FuseKml = new KmlDocument();
-                                FuseKml.parseGeoJSON(object.getJSONObject("fuse_data2").toString());
+                                FuseKml.parseGeoJSON(fuseObject.toString());
                                 KmlFeature.Styler styler = new FuseKmlStyler(Color.BLUE, binding.map);
                                 FuseOverLay = (FolderOverlay) FuseKml.mKmlRoot.buildOverlay(binding.map, null, styler, FuseKml);
 
@@ -8027,8 +8350,17 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!object.getJSONObject("switch_data2").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject switchObject = new JSONObject(object.getJSONObject("switch_data2").toString());
+                            for (int i = 0; i < switchObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = switchObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                    geometry.put("coordinates", new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                }
+                            }
                             if (SwitchKml != null) {
-                                SwitchKml.parseGeoJSON(object.getJSONObject("switch_data2").toString());
+                                SwitchKml.parseGeoJSON(switchObject.toString());
                                 KmlFeature.Styler styler = new SwitchKmlStyler(Color.BLACK, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) SwitchKml.mKmlRoot.buildOverlay(binding.map, null, styler, SwitchKml);
                                 SwitchOverLay.add(folderOverlay);
@@ -8044,7 +8376,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
                             } else {
                                 SwitchKml = new KmlDocument();
-                                SwitchKml.parseGeoJSON(object.getJSONObject("switch_data2").toString());
+                                SwitchKml.parseGeoJSON(switchObject.toString());
                                 KmlFeature.Styler styler = new SwitchKmlStyler(Color.BLACK, binding.map);
                                 SwitchOverLay = (FolderOverlay) SwitchKml.mKmlRoot.buildOverlay(binding.map, null, styler, SwitchKml);
 
@@ -8063,8 +8395,17 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!object.getJSONObject("shunt_capacitor2").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject capacitorObject = new JSONObject(object.getJSONObject("shunt_capacitor2").toString());
+                            for (int i = 0; i < capacitorObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = capacitorObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                    geometry.put("coordinates", new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                }
+                            }
                             if (ShuntCapacitorKml != null) {
-                                ShuntCapacitorKml.parseGeoJSON(object.getJSONObject("shunt_capacitor2").toString());
+                                ShuntCapacitorKml.parseGeoJSON(capacitorObject.toString());
                                 KmlFeature.Styler styler = new ShuntCapacitorKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) ShuntCapacitorKml.mKmlRoot.buildOverlay(binding.map, null, styler, ShuntCapacitorKml);
                                 ShuntCapacitorOverLay.add(folderOverlay);
@@ -8081,7 +8422,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
                             } else {
                                 ShuntCapacitorKml = new KmlDocument();
-                                ShuntCapacitorKml.parseGeoJSON(object.getJSONObject("shunt_capacitor2").toString());
+                                ShuntCapacitorKml.parseGeoJSON(capacitorObject.toString());
                                 KmlFeature.Styler styler = new ShuntCapacitorKmlStyler(Color.BLUE, binding.map);
                                 ShuntCapacitorOverLay = (FolderOverlay) ShuntCapacitorKml.mKmlRoot.buildOverlay(binding.map, null, styler, ShuntCapacitorKml);
 
@@ -8099,8 +8440,17 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!object.getJSONObject("spotload2").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject spotloadObject = new JSONObject(object.getJSONObject("spotload2").toString());
+                            for (int i = 0; i < spotloadObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = spotloadObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                    geometry.put("coordinates", new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                }
+                            }
                             if (SpotloadKml != null) {
-                                SpotloadKml.parseGeoJSON(object.getJSONObject("spotload2").toString());
+                                SpotloadKml.parseGeoJSON(spotloadObject.toString());
                                 KmlFeature.Styler styler = new SpotLoadKmlStyler(Color.BLUE, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) SpotloadKml.mKmlRoot.buildOverlay(binding.map, null, styler, SpotloadKml);
                                 SpotLoadOverLay.add(folderOverlay);
@@ -8116,7 +8466,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                                 }
                             } else {
                                 SpotloadKml = new KmlDocument();
-                                SpotloadKml.parseGeoJSON(object.getJSONObject("spotload2").toString());
+                                SpotloadKml.parseGeoJSON(spotloadObject.toString());
                                 KmlFeature.Styler styler = new SpotLoadKmlStyler(Color.BLUE, binding.map);
                                 SpotLoadOverLay = (FolderOverlay) SpotloadKml.mKmlRoot.buildOverlay(binding.map, null, styler, SpotloadKml);
 
@@ -8134,14 +8484,23 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                         }
 
                         if (!object.getJSONObject("node_data2").getJSONArray("features").toString().equals("[]")) {
+                            JSONObject nodeObject = new JSONObject(object.getJSONObject("node_data2").toString());
+                            for (int i = 0; i < nodeObject.getJSONArray("features").length(); i++) {
+                                JSONObject geometry = nodeObject.getJSONArray("features").getJSONObject(i).getJSONObject("geometry");
+                                if ("Point".equalsIgnoreCase(geometry.getString("type"))) {
+                                    org.json.JSONArray point = geometry.getJSONArray("coordinates");
+                                    UTMConverter.LatLon latLon = UTMConverter.toLatLon(point.getDouble(0), point.getDouble(1), 43, true);
+                                    geometry.put("coordinates", new org.json.JSONArray().put(latLon.longitude).put(latLon.latitude));
+                                }
+                            }
                             if (NodeKml != null) {
-                                NodeKml.parseGeoJSON(object.getJSONObject("node_data2").toString());
+                                NodeKml.parseGeoJSON(nodeObject.toString());
                                 KmlFeature.Styler styler = new NodeKmlStyler(Color.BLACK, binding.map);
                                 FolderOverlay folderOverlay = (FolderOverlay) NodeKml.mKmlRoot.buildOverlay(binding.map, null, styler, NodeKml);
                                 nodeOverLay.add(folderOverlay);
                             } else {
                                 NodeKml = new KmlDocument();
-                                NodeKml.parseGeoJSON(object.getJSONObject("node_data2").toString());
+                                NodeKml.parseGeoJSON(nodeObject.toString());
                                 KmlFeature.Styler styler = new NodeKmlStyler(Color.BLACK, binding.map);
                                 nodeOverLay = (FolderOverlay) NodeKml.mKmlRoot.buildOverlay(binding.map, null, styler, NodeKml);
                             }
@@ -11843,23 +12202,13 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
         @Override
         public void onPoint(Marker marker, KmlPlacemark kmlPlacemark, KmlPoint kmlPoint) {
             try {
-               /* int i = kmlPlacemark.mGeometry.mCoordinates.size() - 1;
-                GeoPoint geoPoint = new GeoPoint(kmlPoint.mCoordinates.get(i).getLatitude(), kmlPoint.mCoordinates.get(i).getLongitude());
-                marker.setPosition(geoPoint);
-                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-                Drawable drawable = getResources().getDrawable(R.drawable.source);
-                Bitmap bites = drawableToBitmap(drawable);
-                Bitmap customizedBitmap = changeSourceColor(bites, Color.BLACK);
-                marker.setIcon(new BitmapDrawable(mapView.getContext().getResources(), ResponseDataUtils.addPaddingToBitmap(customizedBitmap, 0, 0)));*/
 
                 marker.setIcon(getDrawable(R.drawable.location));
 
                 marker.setOnMarkerClickListener((marker1, mapView1) -> {
 
                     if (selectedNodeID != null) {
-                        GeoPoint geoPoint1 = new GeoPoint(
-                                Double.parseDouble(kmlPlacemark.getExtendedData("fromy")), Double.parseDouble(kmlPlacemark.getExtendedData("fromX"))
-                        );
+                        GeoPoint geoPoint1 = UTMConversion.convert(Double.parseDouble(kmlPlacemark.getExtendedData("fromX")), Double.parseDouble(kmlPlacemark.getExtendedData("fromy")));
 
                         if (!newSectionGeoPointList.contains(geoPoint1)) {
                             newSectionGeoPointList.add(geoPoint1);
@@ -11868,8 +12217,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                     } else {
                         selectedNodeID = kmlPlacemark.getExtendedData("NodeId");
 
-                        GeoPoint geoPoint1 = new GeoPoint(
-                                Double.parseDouble(kmlPlacemark.getExtendedData("fromy")), Double.parseDouble(kmlPlacemark.getExtendedData("fromX"))
+                        GeoPoint geoPoint1 = UTMConversion.convert(Double.parseDouble(kmlPlacemark.getExtendedData("fromX")), Double.parseDouble(kmlPlacemark.getExtendedData("fromy"))
                         );
 
                         if (!newSectionGeoPointList.contains(geoPoint1)) {
@@ -11879,7 +12227,10 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
 
                     }
 
-                    SourceDialog sourceDialog = new SourceDialog(MapActivity.this, getSupportFragmentManager(), getLifecycle(), kmlPlacemark.getExtendedData("NodeId"), kmlPlacemark.getExtendedData("fromX"), kmlPlacemark.getExtendedData("fromy"), kmlPlacemark.getExtendedData("UTMX"), kmlPlacemark.getExtendedData("UTMY"));
+                    SourceDialog sourceDialog = new SourceDialog(MapActivity.this, getSupportFragmentManager(), getLifecycle(),
+                            kmlPlacemark.getExtendedData("NodeId"), kmlPlacemark.getExtendedData("fromX"), kmlPlacemark.getExtendedData("fromy"),
+                            kmlPlacemark.getExtendedData("UTMX") != null ? kmlPlacemark.getExtendedData("UTMX") : kmlPlacemark.getExtendedData("fromX"),
+                            kmlPlacemark.getExtendedData("UTMY") != null ? kmlPlacemark.getExtendedData("UTMY") : kmlPlacemark.getExtendedData("fromy"));
                     sourceDialog.show();
                     return true;
                 });
@@ -11939,9 +12290,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                     nodeId = kmlPlacemark.getExtendedData("NodeId");
 
                     if (selectedNodeID != null) {
-                        GeoPoint geoPoint1 = new GeoPoint(
-                                Double.parseDouble(kmlPlacemark.getExtendedData("fromy")), Double.parseDouble(kmlPlacemark.getExtendedData("fromX"))
-                        );
+                        GeoPoint geoPoint1 = UTMConversion.convert(Double.parseDouble(kmlPlacemark.getExtendedData("fromX")), Double.parseDouble(kmlPlacemark.getExtendedData("fromy")));
 
                         if (!newSectionGeoPointList.contains(geoPoint1)) {
                             newSectionGeoPointList.add(geoPoint1);
@@ -11951,9 +12300,7 @@ public class MapActivity extends AppCompatActivity implements SearchView.OnQuery
                     } else {
                         selectedNodeID = kmlPlacemark.getExtendedData("NodeId");
 
-                        GeoPoint geoPoint1 = new GeoPoint(
-                                Double.parseDouble(kmlPlacemark.getExtendedData("fromy")), Double.parseDouble(kmlPlacemark.getExtendedData("fromX"))
-                        );
+                        GeoPoint geoPoint1 = UTMConversion.convert(Double.parseDouble(kmlPlacemark.getExtendedData("fromX")), Double.parseDouble(kmlPlacemark.getExtendedData("fromy")));
 
                         if (!newSectionGeoPointList.contains(geoPoint1)) {
                             newSectionGeoPointList.add(geoPoint1);

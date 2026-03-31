@@ -141,10 +141,9 @@ public class SourceEditDialog extends Dialog {
         if (isSourceEditFragmentValid && isSourceNetworkEditFragmentValid) {
             try {
                 JsonObject sectionObject = new JsonObject();
-                sectionObject.addProperty("Username", prefManager.getUserType());
+                sectionObject.addProperty("Username", prefManager.getUserName());
                 sectionObject.addProperty("NetworkId", sourceNetworkEditData.getString("networkName"));
-                sectionObject.addProperty("Mode", "Web");
-                sectionObject.addProperty("CYMDBNET", prefManager.getDBName());
+                sectionObject.addProperty("CYMDBNET", prefManager.getDatabaseSurvey());
                 JsonArray x = new JsonArray();
                 JsonArray y = new JsonArray();
                 double latValue = Double.parseDouble(sourceEditData.getString("Latitude"));
@@ -167,7 +166,7 @@ public class SourceEditDialog extends Dialog {
                 deviceObject.addProperty("Group5", sourceNetworkEditData.getString("groupFive"));
                 deviceObject.addProperty("Group6", sourceNetworkEditData.getString("groupSix"));
                 deviceObject.addProperty("AmbientTemperature", sourceNetworkEditData.getString("ambientTemperature"));
-                deviceObject.addProperty("EquipmentID", sourceEditData.getString("eqpID"));
+                deviceObject.addProperty("ID", sourceEditData.getString("eqpID"));
 
                 JsonArray deviceArray = new JsonArray();
                 deviceArray.add(deviceObject);
@@ -179,6 +178,7 @@ public class SourceEditDialog extends Dialog {
 
                 if (addDevice != null) {
                     JsonObject object = new JsonObject();
+                    object.addProperty("Type", "Survey");
                     object.add("Data", jsonArray);
                     addDevice.addDevice("0", object);
                     dismiss();

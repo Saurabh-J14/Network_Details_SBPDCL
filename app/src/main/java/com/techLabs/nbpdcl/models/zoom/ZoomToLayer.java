@@ -21,25 +21,25 @@ public class ZoomToLayer {
 
     public class Output {
 
-        @SerializedName("X")
+        @SerializedName(value = "X", alternate = {"x"})
         @Expose
         private String x;
-        @SerializedName("Y")
+        @SerializedName(value = "Y", alternate = {"y"})
         @Expose
         private String y;
-        @SerializedName("DeviceNumber")
+        @SerializedName(value = "DeviceNumber", alternate = {"devicenumber"})
         @Expose
         private String deviceNumber;
-        @SerializedName("Location")
+        @SerializedName(value = "Location", alternate = {"location"})
         @Expose
         private String location;
-        @SerializedName("DeviceType")
+        @SerializedName(value = "DeviceType", alternate = {"devicetype"})
         @Expose
         private String deviceType;
-        @SerializedName("NetworkId")
+        @SerializedName(value = "NetworkId", alternate = {"networkid"})
         @Expose
         private String networkId;
-        @SerializedName("SectionId")
+        @SerializedName(value = "SectionId", alternate = {"sectionid"})
         @Expose
         private String sectionId;
 

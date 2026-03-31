@@ -134,28 +134,34 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onResponse(@NonNull Call<LoginModel> call, @NonNull Response<LoginModel> response) {
                 if (response.code() == 200) {
-                    getProjectList();
                     try {
                         LoginModel loginModel = response.body();
                         assert loginModel != null;
                         if (loginModel.getAccess() != null && !loginModel.getAccess().equals("null") && !loginModel.getAccess().isBlank()) {
                             prefManager.setAccessToken(loginModel.getAccess());
                         }
-                        if (loginModel.getUsertype() != null && !loginModel.getUsertype().equals("null") && !loginModel.getUsertype().isBlank()) {
+/*                        if (loginModel.getUsertype() != null && !loginModel.getUsertype().equals("null") && !loginModel.getUsertype().isBlank()) {
                             prefManager.setUserType(loginModel.getUsertype());
                             prefManager.setType(loginModel.getUsertype());
-                        }
+                        }*/
 
                         if (loginModel.getMsg() != null && !loginModel.getMsg().equals("null")
                                 && (loginModel.getMsg().equalsIgnoreCase("OTP sent successfully.")
                                 || loginModel.getMsg().equalsIgnoreCase("Login Success"))) {
+                            if (loginModel.getUsertype() != null && !loginModel.getUsertype().equals("null") && !loginModel.getUsertype().isBlank()) {
+                                prefManager.setUserType(loginModel.getUsertype());
+                                prefManager.setType(loginModel.getUsertype());
+                            }
+                            prefManager.setUserName(userName);
                             prefManager.setIsUserLogin(true);
-                            Intent intent = new Intent(LoginActivity.this, ExistNetworkActivity.class);
-                            intent.putExtra("Number", loginModel.getMobileNumber());
-                            intent.putExtra("userName", userName);
-                            intent.putExtra("password", passWord);
-                            startActivity(intent);
-                            finish();
+                            getProjectList(userName, () -> {
+                                Intent intent = new Intent(LoginActivity.this, ExistNetworkActivity.class);
+                                intent.putExtra("Number", loginModel.getMobileNumber());
+                                intent.putExtra("userName", userName);
+                                intent.putExtra("password", passWord);
+                                startActivity(intent);
+                                finish();
+                            });
                         } else {
                             binding.otpCard.setVisibility(View.VISIBLE);
                             stopBgAnimation();
@@ -192,7 +198,7 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    private void getProjectList() {
+    private void getProjectList(String userName, Runnable onSuccess) {
 
         Retrofit retrofit = RetrofitClient.getClient(this);
         ApiInterface apiInterface = retrofit.create(ApiInterface.class);
@@ -203,7 +209,7 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        Call<ProjectModel> call = apiInterface.getProject("Bearer " + accessToken, prefManager.getUserName());
+        Call<ProjectModel> call = apiInterface.getProject("Bearer " + accessToken, userName);
 
         call.enqueue(new Callback<ProjectModel>() {
             @Override
@@ -219,6 +225,7 @@ public class LoginActivity extends AppCompatActivity {
                             break;
                         }
                     }
+                    onSuccess.run();
 
                 } else if (response.code() == 401) {
 
