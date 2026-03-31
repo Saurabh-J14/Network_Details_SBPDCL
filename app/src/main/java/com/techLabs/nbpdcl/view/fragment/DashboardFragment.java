@@ -134,12 +134,10 @@ public class DashboardFragment extends Fragment {
 
         if (ResponseDataUtils.checkInternetConnectionAndInternetAccess(requireActivity())) {
             getMainData();
-            getProjectList();
         } else {
             Snackbar.make(requireView(), getString(R.string.no_internet_connection), Snackbar.LENGTH_INDEFINITE)
                     .setAction("Retry", v -> {
                         getMainData();
-                        getProjectList();
                     })
                     .show();
         }
@@ -196,6 +194,7 @@ public class DashboardFragment extends Fragment {
         call.enqueue(new Callback<MainFeeder>() {
             @Override
             public void onResponse(@NonNull Call<MainFeeder> call, @NonNull Response<MainFeeder> response) {
+                getProjectList();
                 if (response.code() == 200) {
                     binding.swipeRefresh.setRefreshing(false);
                     binding.dashboardLayout.setVisibility(View.VISIBLE);
@@ -211,8 +210,6 @@ public class DashboardFragment extends Fragment {
                     valueAnimator(binding.txtActualKva, mainFeeder.getOutput().getCustomeraLoad() != null ? mainFeeder.getOutput().getCustomeraLoad().getActualKVA() : 0.0);
                     valueAnimator(binding.txtConnectedKva, mainFeeder.getOutput().getCustomeraLoad() != null ? mainFeeder.getOutput().getCustomeraLoad().getConnectedKVA() : 0.0);
                     valueAnimator(binding.txtCustomer, mainFeeder.getOutput().getCustomerCountall() != null ? mainFeeder.getOutput().getCustomerCountall().getConsumerCount() : 0);
-/*                    valueAnimator(binding.txtSubstation, mainFeeder.getOutput().getNetworkinfo() != null ? mainFeeder.getOutput().getNetworkinfo().getGroup1Count() : 0);
-                    valueAnimator(binding.txtFeeder, mainFeeder.getOutput().getNetworkinfo() != null ? mainFeeder.getOutput().getNetworkinfo().getNetworkIdCount() : 0);*/
 
                     valueAnimator(binding.powerDtCount, mainFeeder.getOutput().getNetworkinfo() != null ? mainFeeder.getOutput().getNetworkinfo().getPowerTotal() : 0);
                     valueAnimator(binding.distributionTransformer, mainFeeder.getOutput().getNetworkinfo() != null ? mainFeeder.getOutput().getNetworkinfo().getDistributionTotal() : 0);

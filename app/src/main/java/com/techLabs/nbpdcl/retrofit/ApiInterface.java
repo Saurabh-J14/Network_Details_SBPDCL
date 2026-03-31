@@ -59,7 +59,7 @@ import retrofit2.http.Url;
 
 public interface ApiInterface {
 
-    @POST("AdminPanel/user/login/")
+    @POST("AdminPanel/user/loginNew/")
     Call<LoginModel> getLogin(@Body JsonObject jsonObject);
     @GET("Project/")
     Call<ProjectModel> getProject(@Header("Authorization") String accessToken, @Query("user_id") String userId);

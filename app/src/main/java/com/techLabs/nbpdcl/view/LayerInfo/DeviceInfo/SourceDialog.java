@@ -63,8 +63,8 @@ public class SourceDialog extends Dialog {
         binding.tablayout.addTab(binding.tablayout.newTab().setText("Network"));
         binding.tablayout.addTab(binding.tablayout.newTab().setText("Source"));
 
-        if (nodeId != null && latitude != null && longitude != null && utX != null && utY != null) {
-            SourceAdapter adapter = new SourceAdapter(fragmentManager, lifecycle, context, nodeId, latitude, longitude, utX, utY);
+        if (nodeId != null) {
+            SourceAdapter adapter = new SourceAdapter(fragmentManager, lifecycle, context, nodeId, latitude, longitude, utX != null ? utX : latitude, utY != null ? utY : longitude);
             binding.viewPager.setAdapter(adapter);
         }
 

@@ -109,7 +109,8 @@ public class ExistNetworkActivity extends AppCompatActivity implements SwipeRefr
         Retrofit retrofit = RetrofitClient.getClient(this);
         ApiInterface apiInterface = retrofit.create(ApiInterface.class);
         jsonObject.addProperty("CYMDBNET", prefManager.getDatabaseSurvey());
-        jsonObject.addProperty("type", prefManager.getUserType());
+        jsonObject.addProperty("UserType", prefManager.getUserType());
+        jsonObject.addProperty("DatabaseType","Survey");
         Call<ExistNetworkModel> call = apiInterface.getExistNetworkData(jsonObject);
         call.enqueue(new Callback<ExistNetworkModel>() {
             @Override

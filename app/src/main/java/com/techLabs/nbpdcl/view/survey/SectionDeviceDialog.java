@@ -896,7 +896,7 @@ public class SectionDeviceDialog extends Dialog {
                 sectionData.addProperty("Phase", phase);
                 sectionData.addProperty("NetworkId", networkId);
                 sectionData.addProperty("FromNodeID", nodeId);
-                sectionData.addProperty("Mode", "Web");
+//                sectionData.addProperty("Mode", "Web");
                 sectionData.addProperty("CYMDBNET", prefManager.getDBName());
                 JsonArray latArray = new JsonArray();
                 JsonArray lonArray = new JsonArray();
@@ -997,10 +997,14 @@ public class SectionDeviceDialog extends Dialog {
             jsonObject1.add("Device", deviceArray);
             JsonArray jsonArray = new JsonArray();
             jsonArray.add(jsonObject1);
+            jsonObject.addProperty("Type", "Survey");
             jsonObject.add("Data", jsonArray);
             if (addDevice != null) {
-                addDevice.addDevice("98", jsonObject);
-                dismiss();
+                try {
+                    addDevice.addDevice("98", jsonObject);
+                } finally {
+                    dismiss();
+                }
             }
         } else {
             if (binding != null) {

@@ -10,6 +10,9 @@ public class NewConnectionModel {
     @SerializedName("output")
     @Expose
     private List<Output> output;
+    @SerializedName("Database")
+    @Expose
+    private String database;
 
     public List<Output> getOutput() {
         return output;
@@ -19,14 +22,25 @@ public class NewConnectionModel {
         this.output = output;
     }
 
+    public String getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(String database) {
+        this.database = database;
+    }
+
     public class Output {
 
+        @SerializedName("Sno")
+        @Expose
+        private Integer sno;
         @SerializedName("ApplicationID")
         @Expose
-        private Object applicationID;
+        private String applicationID;
         @SerializedName("BPNO")
         @Expose
-        private Object bpno;
+        private String bpno;
         @SerializedName("Date")
         @Expose
         private String date;
@@ -35,49 +49,49 @@ public class NewConnectionModel {
         private String dtgisid;
         @SerializedName("PoleNo")
         @Expose
-        private Object poleNo;
+        private String poleNo;
         @SerializedName("ContractDemand")
         @Expose
-        private Object contractDemand;
+        private String contractDemand;
         @SerializedName("NearestConsumerNumber")
         @Expose
         private String nearestConsumerNumber;
         @SerializedName("SanctionedLoad")
         @Expose
-        private Object sanctionedLoad;
+        private String sanctionedLoad;
         @SerializedName("SanctionedPhase")
         @Expose
-        private Object sanctionedPhase;
+        private String sanctionedPhase;
         @SerializedName("SanctionedCategory")
         @Expose
-        private Object sanctionedCategory;
+        private String sanctionedCategory;
         @SerializedName("ServiceCableLength")
         @Expose
-        private Float serviceCableLength;
+        private String serviceCableLength;
         @SerializedName("Circle")
         @Expose
-        private Object circle;
+        private String circle;
         @SerializedName("Division")
         @Expose
-        private Object division;
+        private String division;
         @SerializedName("Subdivision")
         @Expose
-        private Object subdivision;
+        private String subdivision;
         @SerializedName("Section")
         @Expose
-        private Object section;
+        private String section;
         @SerializedName("SubstationID")
         @Expose
-        private Object substationID;
+        private String substationID;
         @SerializedName("SubstationName")
         @Expose
-        private Object substationName;
+        private String substationName;
         @SerializedName("Feederid")
         @Expose
         private String feederid;
         @SerializedName("OperationType")
         @Expose
-        private Object operationType;
+        private String operationType;
         @SerializedName("Status")
         @Expose
         private String status;
@@ -86,36 +100,44 @@ public class NewConnectionModel {
         private String feasibility;
         @SerializedName("Before_Percentage_VR")
         @Expose
-        private Object beforePercentageVR;
+        private String beforePercentageVR;
         @SerializedName("After_Percentage_VR")
         @Expose
-        private Object afterPercentageVR;
+        private String afterPercentageVR;
         @SerializedName("Before_DTLoading")
         @Expose
-        private Object beforeDTLoading;
+        private String beforeDTLoading;
         @SerializedName("After_DTLoading")
         @Expose
-        private Object afterDTLoading;
+        private String afterDTLoading;
         @SerializedName("Recomnd_Phase")
         @Expose
-        private Object recomndPhase;
+        private String recomndPhase;
         @SerializedName("Remark")
         @Expose
         private String remark;
 
-        public Object getApplicationID() {
+        public Integer getSno() {
+            return sno;
+        }
+
+        public void setSno(Integer sno) {
+            this.sno = sno;
+        }
+
+        public String getApplicationID() {
             return applicationID;
         }
 
-        public void setApplicationID(Object applicationID) {
+        public void setApplicationID(String applicationID) {
             this.applicationID = applicationID;
         }
 
-        public Object getBpno() {
+        public String getBpno() {
             return bpno;
         }
 
-        public void setBpno(Object bpno) {
+        public void setBpno(String bpno) {
             this.bpno = bpno;
         }
 
@@ -135,19 +157,19 @@ public class NewConnectionModel {
             this.dtgisid = dtgisid;
         }
 
-        public Object getPoleNo() {
+        public String getPoleNo() {
             return poleNo;
         }
 
-        public void setPoleNo(Object poleNo) {
+        public void setPoleNo(String poleNo) {
             this.poleNo = poleNo;
         }
 
-        public Object getContractDemand() {
+        public String getContractDemand() {
             return contractDemand;
         }
 
-        public void setContractDemand(Object contractDemand) {
+        public void setContractDemand(String contractDemand) {
             this.contractDemand = contractDemand;
         }
 
@@ -159,83 +181,83 @@ public class NewConnectionModel {
             this.nearestConsumerNumber = nearestConsumerNumber;
         }
 
-        public Object getSanctionedLoad() {
+        public String getSanctionedLoad() {
             return sanctionedLoad;
         }
 
-        public void setSanctionedLoad(Object sanctionedLoad) {
+        public void setSanctionedLoad(String sanctionedLoad) {
             this.sanctionedLoad = sanctionedLoad;
         }
 
-        public Object getSanctionedPhase() {
+        public String getSanctionedPhase() {
             return sanctionedPhase;
         }
 
-        public void setSanctionedPhase(Object sanctionedPhase) {
+        public void setSanctionedPhase(String sanctionedPhase) {
             this.sanctionedPhase = sanctionedPhase;
         }
 
-        public Object getSanctionedCategory() {
+        public String getSanctionedCategory() {
             return sanctionedCategory;
         }
 
-        public void setSanctionedCategory(Object sanctionedCategory) {
+        public void setSanctionedCategory(String sanctionedCategory) {
             this.sanctionedCategory = sanctionedCategory;
         }
 
-        public Float getServiceCableLength() {
+        public String getServiceCableLength() {
             return serviceCableLength;
         }
 
-        public void setServiceCableLength(Float serviceCableLength) {
+        public void setServiceCableLength(String serviceCableLength) {
             this.serviceCableLength = serviceCableLength;
         }
 
-        public Object getCircle() {
+        public String getCircle() {
             return circle;
         }
 
-        public void setCircle(Object circle) {
+        public void setCircle(String circle) {
             this.circle = circle;
         }
 
-        public Object getDivision() {
+        public String getDivision() {
             return division;
         }
 
-        public void setDivision(Object division) {
+        public void setDivision(String division) {
             this.division = division;
         }
 
-        public Object getSubdivision() {
+        public String getSubdivision() {
             return subdivision;
         }
 
-        public void setSubdivision(Object subdivision) {
+        public void setSubdivision(String subdivision) {
             this.subdivision = subdivision;
         }
 
-        public Object getSection() {
+        public String getSection() {
             return section;
         }
 
-        public void setSection(Object section) {
+        public void setSection(String section) {
             this.section = section;
         }
 
-        public Object getSubstationID() {
+        public String getSubstationID() {
             return substationID;
         }
 
-        public void setSubstationID(Object substationID) {
+        public void setSubstationID(String substationID) {
             this.substationID = substationID;
         }
 
-        public Object getSubstationName() {
+        public String getSubstationName() {
             return substationName;
         }
 
-        public void setSubstationName(Object substationName) {
+        public void setSubstationName(String substationName) {
             this.substationName = substationName;
         }
 
@@ -247,11 +269,11 @@ public class NewConnectionModel {
             this.feederid = feederid;
         }
 
-        public Object getOperationType() {
+        public String getOperationType() {
             return operationType;
         }
 
-        public void setOperationType(Object operationType) {
+        public void setOperationType(String operationType) {
             this.operationType = operationType;
         }
 
@@ -271,43 +293,43 @@ public class NewConnectionModel {
             this.feasibility = feasibility;
         }
 
-        public Object getBeforePercentageVR() {
+        public String getBeforePercentageVR() {
             return beforePercentageVR;
         }
 
-        public void setBeforePercentageVR(Object beforePercentageVR) {
+        public void setBeforePercentageVR(String beforePercentageVR) {
             this.beforePercentageVR = beforePercentageVR;
         }
 
-        public Object getAfterPercentageVR() {
+        public String getAfterPercentageVR() {
             return afterPercentageVR;
         }
 
-        public void setAfterPercentageVR(Object afterPercentageVR) {
+        public void setAfterPercentageVR(String afterPercentageVR) {
             this.afterPercentageVR = afterPercentageVR;
         }
 
-        public Object getBeforeDTLoading() {
+        public String getBeforeDTLoading() {
             return beforeDTLoading;
         }
 
-        public void setBeforeDTLoading(Object beforeDTLoading) {
+        public void setBeforeDTLoading(String beforeDTLoading) {
             this.beforeDTLoading = beforeDTLoading;
         }
 
-        public Object getAfterDTLoading() {
+        public String getAfterDTLoading() {
             return afterDTLoading;
         }
 
-        public void setAfterDTLoading(Object afterDTLoading) {
+        public void setAfterDTLoading(String afterDTLoading) {
             this.afterDTLoading = afterDTLoading;
         }
 
-        public Object getRecomndPhase() {
+        public String getRecomndPhase() {
             return recomndPhase;
         }
 
-        public void setRecomndPhase(Object recomndPhase) {
+        public void setRecomndPhase(String recomndPhase) {
             this.recomndPhase = recomndPhase;
         }
 
